@@ -18,6 +18,14 @@
     <title>My Tarot</title>
 </head>
 <body>
+    <div id="rotate-message">
+        <div class="rotate-content">
+            <div class="rotate-icon">⟳</div>
+            <h2>Por favor, gire seu dispositivo</h2>
+            <p>Para a melhor experiência com o Tarot, utilize a tela na vertical.</p>
+        </div>
+    </div>
+
     <div class="container4cantos">
         <div class="decorCantos top-left"></div>
         <div class="decorCantos top-right"></div>
@@ -29,12 +37,23 @@
     </div>
     
     <nav class="navbar">
-        <div class="logo">myTarot</div>
+        <div class="logo">ArcanaFutura</div>
     </nav>
     <div class="container">
         {% block content %}
         {% endblock %} 
     </div>
+
+
+    <!-- START: Manual BrowserSync Injection (Local Only) -->
+    <!-- FIX: Only inject if we are NOT on port 3000 (BrowserSync injects itself there) -->
+    {% if ('localhost' in request.host or '127.0.0.1' in request.host) and ':3000' not in request.host %}
+    <script id="__bs_script__">//<![CDATA[
+        document.write("<script async src='http://HOST:3000/browser-sync/browser-sync-client.js?v=2.29.3'><\/script>".replace("HOST", location.hostname));
+    //]]></script>
+    {% endif %}
+    <!-- END: Manual BrowserSync Injection -->
+
 
 </body>
 </html>

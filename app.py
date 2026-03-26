@@ -28,27 +28,25 @@ from flask_wtf.csrf import CSRFError
 from flask_wtf.csrf import generate_csrf
 from flask_wtf.csrf import validate_csrf
 
-from wtforms.validators import ValidationError  # You need this import for handling CSRF errors
-
-
+from wtforms.validators import ValidationError
 from markupsafe import Markup
-
 from werkzeug.middleware.proxy_fix import ProxyFix
-
 
 # Load environment variables
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-
 app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent")  # Use gevent for WebSockets
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent")
 
 secret_key = os.getenv('SECRET_KEY')
 if not secret_key:
     raise ValueError("No SECRET_KEY set for Flask application")
+
+# Check if running on Render (Production)
+is_production = os.environ.get('RENDER') is not None
 
 # Enhanced security configurations
 app.config.update(
@@ -56,7 +54,11 @@ app.config.update(
     SESSION_TYPE='redis',
     SESSION_PERMANENT=False,
     SESSION_USE_SIGNER=True,
-    SESSION_COOKIE_SECURE=True,
+    
+    # FIX: Only require HTTPS cookies in production
+    SESSION_COOKIE_SECURE=is_production, 
+    # SESSION_COOKIE_SECURE=True,
+
     SESSION_COOKIE_HTTPONLY=True, # Changed to False to allow javascript to access the token
     SESSION_COOKIE_SAMESITE='Lax',
     SESSION_COOKIE_NAME='session',
@@ -67,16 +69,27 @@ app.config.update(
     WTF_CSRF_METHODS=['POST', 'PUT', 'PATCH', 'DELETE']  # Explicitly specify methods
 )
 
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 # Redis configuration
 redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379')
 app.config['SESSION_REDIS'] = redis.from_url(redis_url)
 
-
 # Initialize Redis client
 redis_client = redis.Redis.from_url(redis_url)
 
 # Initialize extensions
+# csrf = CSRFProtect(app)
+# Session(app)
+# limiter = Limiter(
+#     get_remote_address,
+#     app=app,
+#     storage_uri=redis_url,
+#     storage_options={"socket_connect_timeout": 30},
+#     strategy="fixed-window",
+#     default_limits=["400 per day", "100 per hour"]
+# )
+
 csrf = CSRFProtect(app)
 Session(app)
 limiter = Limiter(
@@ -88,23 +101,60 @@ limiter = Limiter(
     default_limits=["400 per day", "100 per hour"]
 )
 
+# CSP in production
+# csp={
+#     'default-src': "'self'",
+#     'style-src': ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+#     'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdnjs.cloudflare.com"],
+#     'font-src': ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+#     'img-src': ["'self'", "data:"],
+#     'connect-src': ["'self'", "wss:", "ws:"]
+# }
 
-csp={
+# csp to browser sync
+csp = {
     'default-src': "'self'",
-    'style-src': ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
-    'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdnjs.cloudflare.com"],
-    'font-src': ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
-    'img-src': ["'self'", "data:"],
-    'connect-src': ["'self'", "wss:", "ws:"]
+    'style-src': [
+        "'self'", 
+        "'unsafe-inline'", 
+        "https://fonts.googleapis.com", 
+        "https://fonts.gstatic.com"
+    ],
+    'script-src': [
+        "'self'", 
+        "'unsafe-inline'", 
+        "'unsafe-eval'", 
+        "https://cdnjs.cloudflare.com", 
+        "http://localhost:3000",
+        "http://192.168.0.102:3000",
+        "https://localhost:*",  # <--- ALLOW RESPONSIVELY APP (HTTPS)
+        "http://localhost:*"    # <--- ALLOW RESPONSIVELY APP (HTTP)
+    ],
+    'font-src': [
+        "'self'", 
+        "https://fonts.googleapis.com", 
+        "https://fonts.gstatic.com"
+    ],
+    'img-src': ["'self'", "data:", "http://localhost:3000", "http://192.168.0.102:3000"],
+    'connect-src': [
+        "'self'", 
+        "wss:", 
+        "ws:", 
+        "http://localhost:5000",
+        "ws://localhost:5000",
+        "http://localhost:3000",
+        "ws://localhost:3000",
+        "http://192.168.0.102:5000",
+        "ws://192.168.0.102:5000",
+        "http://192.168.0.102:3000",
+        "ws://192.168.0.102:3000",
+        "https://localhost:*", # <--- ALLOW RESPONSIVELY APP CONNECTIONS
+        "wss://localhost:*"    # <--- ALLOW RESPONSIVELY APP SOCKETS
+    ]
 }
-
-
 
 # Talisman(app)
 Talisman(app, content_security_policy=csp)
-
-
-
 
 def sanitize_input(text: str) -> str:
     """Sanitizes user input to prevent XSS attacks."""
@@ -116,7 +166,6 @@ def sanitize_input(text: str) -> str:
 # Utility functions
 def markdown_to_html(text: str) -> Markup:
     return Markup(markdown.markdown(text, extensions=['fenced_code', 'codehilite']))
-
 
 # CSRF error handler
 @app.errorhandler(CSRFError)
@@ -184,8 +233,6 @@ model = genai.GenerativeModel(
     model_name="gemma-3-12b-it",
     generation_config=generation_config
 )
-
-
 
 # Cache for tarot cards
 TAROT_CARDS: List[Dict[str, str]] = [
@@ -257,7 +304,6 @@ def process_form():
     return jsonify({'redirect': url_for('cartas')})
 
 
-
 @app.route('/cartas')
 def cartas():
     try:
@@ -265,36 +311,83 @@ def cartas():
     except (TypeError, ValueError):
         return redirect(url_for('home'))
 
-    shuffled_cards = random.sample(TAROT_CARDS, len(TAROT_CARDS))
+    # FIX: Create a shallow copy of the dictionaries.
+    # This ensures we modify the copy, not the global TAROT_CARDS list.
+    deck_copy = [card.copy() for card in TAROT_CARDS] 
+    
+    shuffled_cards = random.sample(deck_copy, len(deck_copy))
+    
     for card in shuffled_cards:
+        # Now this modifies the copy, leaving the global TAROT_CARDS clean
         card["value"] = random.choice(["invertido", "normal"])
 
     cards_group1 = shuffled_cards[:7]
     cards_group2 = shuffled_cards[7:15]
     cards_group3 = shuffled_cards[15:]
 
-    
+    return render_template('cartas.html', 
+                           cards_group1=cards_group1, 
+                           cards_group2=cards_group2, 
+                           cards_group3=cards_group3, 
+                           selected_cards=selected_cards)
 
-    return render_template('cartas.html', cards_group1=cards_group1, cards_group2=cards_group2, cards_group3=cards_group3, selected_cards=selected_cards) 
 
+# @app.route('/results', methods=['POST'])
+# @limiter.limit("5 per minute")
+# def results():
+#     intencao = session.get('intencao', '')
+#     selected_cards = session.get('selected_cards', '')
+#     selected_cards_data = request.form.get('selected_cards_data')
 
-@app.route('/results', methods=['POST'])
-@limiter.limit("5 per minute")
+#     try:
+#         choosed_cards = json.loads(selected_cards_data) if selected_cards_data else []
+#     except json.JSONDecodeError:
+#         choosed_cards = []
+
+#     logging.info(f"Choosed Cards Data: {selected_cards_data}")
+
+#     print(f"Cartas escolhidas: {choosed_cards}")
+
+#     return render_template('results.html', intencao=intencao, selected_cards=selected_cards, choosed_cards=choosed_cards)
+
+rate_limit = "5 per minute" if is_production else "200 per minute"
+
+# 2. Apply it to the route
+@app.route('/results', methods=['GET', 'POST'])
+@limiter.limit(rate_limit)
 def results():
-    intencao = session.get('intencao', '')
-    selected_cards = session.get('selected_cards', '')
-    selected_cards_data = request.form.get('selected_cards_data')
+    # --- SCENARIO 1: User submits the form (POST) ---
+    if request.method == 'POST':
+        intencao = session.get('intencao', '')
+        selected_cards = session.get('selected_cards', '')
+        selected_cards_data = request.form.get('selected_cards_data')
 
-    try:
-        choosed_cards = json.loads(selected_cards_data) if selected_cards_data else []
-    except json.JSONDecodeError:
-        choosed_cards = []
+        try:
+            choosed_cards = json.loads(selected_cards_data) if selected_cards_data else []
+        except json.JSONDecodeError:
+            choosed_cards = []
 
-    logging.info(f"Choosed Cards Data: {selected_cards_data}")
+        # CRITICAL FIX: Save the cards to the session!
+        # This allows the page to survive a reload (GET request)
+        session['choosed_cards'] = choosed_cards
 
-    print(f"Cartas escolhidas: {choosed_cards}")
+        logging.info(f"Choosed Cards Data (POST): {selected_cards_data}")
+        return render_template('results.html', intencao=intencao, selected_cards=selected_cards, choosed_cards=choosed_cards)
 
-    return render_template('results.html', intencao=intencao, selected_cards=selected_cards, choosed_cards=choosed_cards)
+    # --- SCENARIO 2: Page Reload / ResponsivelyApp Sync (GET) ---
+    else:
+        # Try to recover data from session
+        choosed_cards = session.get('choosed_cards')
+        intencao = session.get('intencao', '')
+        selected_cards = session.get('selected_cards', '')
+
+        # Only redirect if we truly have no data (e.g., user typed url manually)
+        if not choosed_cards:
+            return redirect(url_for('cartas'))
+        
+        # Render the page using the saved session data
+        return render_template('results.html', intencao=intencao, selected_cards=selected_cards, choosed_cards=choosed_cards)
+
 
 # SocketIO event handlers
 # @socketio.on('start_generation')
@@ -350,7 +443,7 @@ def handle_message(data: Dict[str, str]):
 
 def generate_tarot_reading(intencao: str, selected_cards: str, choosed_cards: List[Dict[str, str]]) -> str:
     prompt = (
-        f"Atue como um tarólogo experiente. Faça uma leitura de Tarot objetiva e concisa. "
+        f"Atue como um tarólogo experiente. Faça uma leitura completa de Tarot "
         f"A intenção do usuário é: {intencao}. "
         f"O usuário tirou {selected_cards} cartas. "
         f"As cartas tiradas são: {json.dumps(choosed_cards, ensure_ascii=False)}. "
@@ -367,4 +460,5 @@ def generate_tarot_reading(intencao: str, selected_cards: str, choosed_cards: Li
     return markdown_to_html(reading)
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True)
+    # Change host to '0.0.0.0' to allow access from external IPs (your phone)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)

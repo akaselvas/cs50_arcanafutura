@@ -1,36 +1,54 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="insideIndex">
-    <div class="texto-destacado">
-        <p>desvende os mistérios do Tarot com a ajuda da inteligência artificial, explore as profundezas da sua alma e
-            encontre respostas para suas perguntas.</p>
-    </div>
-    <div class="txt-parafrafo">
-        <p>quer saber o que o futuro reserva?</p>
-        <p>digite sua intenção no campo abaixo para uma leitura personalizada, se preferir manter a intenção em segredo
-            deixe o campo em branco.</p>
-    </div>
-    <form id="tarotForm" action="{{ url_for('process_form') }}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div>
-            <input type="text" id="intencao" class="chat-input" name="intencao"
-                placeholder="Escreva sua intenção aqui..." autocomplete="off">
+    
+    <!-- GROUP 1: Title, Subtitle, and Input -->
+    <div class="text-group">
+        <div class="texto-destacado">
+            <p>desvende os mistérios do Tarot com a ajuda da inteligência artificial, explore as profundezas da sua alma e
+                encontre respostas para suas perguntas.</p>
         </div>
+        
         <div class="txt-parafrafo">
-            <p>escolha com quantas cartas você quer jogar</p>
-            <div class="container-botoes">
-                <button type="button" class="botao-personalizado" data-value="1">1</button>
-                <button type="button" class="botao-personalizado" data-value="3">3</button>
-                <button type="button" class="botao-personalizado" data-value="5">5</button>
-            </div>
+            <p>quer saber o que o futuro reserva?</p>
+            <p>digite sua intenção no campo abaixo para uma leitura personalizada, se preferir manter a intenção em segredo
+                deixe o campo em branco.</p>
         </div>
-        <input type="hidden" id="selectedCards" name="selectedCards" value="">
-        <div>
-            <button type="submit" class="botao-texto-grande">
-                vamos começar
-            </button>
+
+        <!-- MOVED TEXTAREA HERE -->
+        <form id="tarotForm" action="{{ url_for('process_form') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <!-- The textarea is now part of this group -->
+            <textarea 
+                id="intencao" 
+                name="intencao" 
+                class="chat-input" 
+                placeholder="Escreva sua intenção aqui..." 
+                autocomplete="off"
+                rows="3"></textarea>
+    </div> <!-- End of text-group -->
+
+    <!-- GROUP 2: Options (Cards 1, 3, 5) -->
+    <!-- Added class "options-container" for better control -->
+    <div class="options-container">
+        <p>escolha com quantas cartas você quer jogar</p>
+        <div class="container-botoes">
+            <button type="button" class="botao-personalizado" data-value="1">1</button>
+            <button type="button" class="botao-personalizado" data-value="3">3</button>
+            <button type="button" class="botao-personalizado" data-value="5">5</button>
         </div>
-    </form>
+    </div>
+    <input type="hidden" id="selectedCards" name="selectedCards" value="">
+
+    <!-- GROUP 3: Start Button -->
+    <div>
+        <button type="submit" class="botao-texto-grande">
+            vamos começar
+        </button>
+    </div>
+    </form> <!-- End Form -->
+
 </div>
 
 <script nonce="{{ g.nonce }}">
@@ -38,6 +56,31 @@
         const form = document.getElementById('tarotForm');
         const botoes = document.querySelectorAll('.botao-personalizado');
         const selectedCardsInput = document.getElementById('selectedCards');
+
+        const inputField = document.getElementById('intencao');
+        const body = document.body; 
+
+        function isTouchDevice() {
+            // "hover: none" means no mouse cursor
+            // "pointer: coarse" means a finger (not a precision mouse)
+            return window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+        }
+
+        inputField.addEventListener('focus', function() {
+            // ONLY activate if it's a touch device
+            if (isTouchDevice()) {
+                body.classList.add('keyboard-active');
+                
+                setTimeout(() => {
+                    inputField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            }
+        });
+
+        inputField.addEventListener('blur', function() {
+            // Always safe to remove the class
+            body.classList.remove('keyboard-active');
+        });
         
         botoes.forEach(botao => {
             botao.addEventListener('click', () => {

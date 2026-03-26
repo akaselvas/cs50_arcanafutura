@@ -10,7 +10,7 @@
             <p id="loading-message">
                 Estamos gerando sua leitura. Por favor, aguarde
                 <span class="loading-dots">
-                    .<span>.</span><span>.</span><span>.</span>
+                    <span>.</span><span>.</span><span>.</span>
                 </span>
             </p>
             <div id="result-area" style="display:none;">
@@ -20,14 +20,14 @@
                         quer conversar mais sobre a leitura?
                     </button>
                 </div>
-                <div class="spacer"></div>
+                <!-- <div class="spacer"></div> -->
             </div>
         </div>
     </div>
     <div id="shadow-overlay" class="shadow-overlay" style="display: none;"></div>
-    <div id="scroll-indicator" class="scroll-indicator" style="display: none;">
+    <!-- <div id="scroll-indicator" class="scroll-indicator" style="display: none;">
         <span>&#x2193;</span>
-    </div>
+    </div> -->
 </div>
 
 <div id="chat-overlay" class="chat-overlay" style="display: none;"></div>
@@ -52,13 +52,30 @@
 <script>
     // FIX 2: Remove the getCookie function, we don't need it anymore.
     
-    // FIX 3: Get the token from the meta tag we added above
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    // FIX 3: Get the token from the meta tag we added above IN PRODUCTION
+    // const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    // const socket = io({
+    //     transports: ['websocket'], // Force WebSocket, disable polling
+    //     upgrade: false
+    // });
 
-    const socket = io({
-        transports: ['websocket'], // Force WebSocket, disable polling
+    // FIX 3: Get the token from the meta tag we added above IN TEST
+    // const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    //     const socket = io('http://localhost:5000', { // <--- Explicitly point to Flask Port
+    //     transports: ['websocket'], 
+    //     upgrade: false,
+    //     cors: { origin: '*' } // Ensure CORS doesn't block it
+    // });
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    // CORRECT SETUP: Leave the URL empty!
+    const socket = io({ 
+        transports: ['websocket'], 
         upgrade: false
+        // You don't need 'cors' here, that is a server-side config
     });
+
     const contentWrapper = document.getElementById('content-wrapper');
     const resultArea = document.getElementById('result-area');
     const shadowOverlay = document.getElementById('shadow-overlay');
@@ -92,14 +109,17 @@
         document.getElementById('tarot-reading').innerHTML = data.reading;
         tarotReading = data.reading;
         
-        setTimeout(checkContentOverflow, 40000);
+        setTimeout(checkContentOverflow, 100);
     });
 
     function checkContentOverflow() {
-        if (resultArea.scrollHeight > contentWrapper.clientHeight) {
-            showScrollIndicators();
+        // If content is taller than the wrapper, show the shadow
+        if (contentWrapper.scrollHeight > contentWrapper.clientHeight) {
+            shadowOverlay.style.display = 'block';
+            // Use a tiny timeout to allow 'display: block' to register before changing opacity
+            setTimeout(() => { shadowOverlay.style.opacity = '1'; }, 10);
         } else {
-            hideScrollIndicators();
+            shadowOverlay.style.opacity = '0';
         }
     }
 
@@ -117,16 +137,18 @@
         const scrollTop = contentWrapper.scrollTop;
         const scrollHeight = contentWrapper.scrollHeight;
         const clientHeight = contentWrapper.clientHeight;
-        const tolerance = 5; // pixels of tolerance
-
-        return scrollTop + clientHeight >= scrollHeight - tolerance;
+        // Tolerance of 20px so it fades out just before hitting the bottom
+        return scrollTop + clientHeight >= scrollHeight - 20; 
     }
 
     contentWrapper.addEventListener('scroll', function() {
-        if (isAtBottom()) {
-            hideScrollIndicators();
-        } else if (resultArea.scrollHeight > contentWrapper.clientHeight) {
-            showScrollIndicators();
+        const threshold = 30; // pixels from the bottom
+        const isAtBottom = contentWrapper.scrollTop + contentWrapper.clientHeight >= contentWrapper.scrollHeight - threshold;
+        
+        if (isAtBottom) {
+            shadowOverlay.style.opacity = '0';
+        } else if (contentWrapper.scrollHeight > contentWrapper.clientHeight) {
+            shadowOverlay.style.opacity = '1';
         }
     });
 
@@ -152,6 +174,16 @@
         if (e.key === 'Enter') sendMessage();
     });
 
+    // function sendMessage() {
+    //     const message = userInput.value.trim();
+    //     if (message) {
+    //         addMessage('user', message);
+    //         showLoadingIndicator();
+    //         socket.emit('send_message', { message: message, tarot_reading: tarotReading });
+    //         userInput.value = '';
+    //     }
+    // }
+
     function sendMessage() {
         const message = userInput.value.trim();
         if (message) {
@@ -159,8 +191,12 @@
             showLoadingIndicator();
             socket.emit('send_message', { message: message, tarot_reading: tarotReading });
             userInput.value = '';
+            
+            // Optional: Uncomment the next line to close keyboard after sending
+            // userInput.blur();  
         }
     }
+
 
     socket.on('receive_message', (data) => {
         removeLoadingIndicator();
@@ -201,5 +237,52 @@
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
+
+    
+    // --- CHAT FOCUS MODE LOGIC ---
+  
+
+    // function isTouchDevice() {
+    //     return window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+    // }
+
+    // chatInput.addEventListener('focus', () => {
+    //     if (isTouchDevice()) {
+    //         chatInterface.classList.add('chat-focus-mode');
+    //         // Scroll to bottom of messages to see the last response for context
+    //         chatMessages.scrollTop = chatMessages.scrollHeight;
+    //     }
+    // });
+
+    // chatInput.addEventListener('blur', () => {
+    //     chatInterface.classList.remove('chat-focus-mode');
+    // });
+
+    function isTouchDevice() {
+        return window.location.hostname !== 'localhost' && window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+    }
+
+    // Use 'userInput' (which you already have) instead of 'chatInput'
+    userInput.addEventListener('focus', () => {
+        if (isTouchDevice()) {
+            chatInterface.classList.add('chat-focus-mode');
+            // Wait for the CSS "shrink" to happen, then scroll to bottom
+            setTimeout(() => {
+                chatMessages.scrollTo({
+                    top: chatMessages.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, 300);
+        }
+    });
+
+    userInput.addEventListener('blur', () => {
+        // We use a small timeout so the 'click' event on the 
+        // Send button has time to fire before the layout jumps.
+        setTimeout(() => {
+            chatInterface.classList.remove('chat-focus-mode');
+        }, 200); 
+    });
+
 </script> 
 {% endblock %}

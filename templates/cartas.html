@@ -19,7 +19,14 @@
             data-value="{{ card.value }}"></button>
         {% endfor %}
     </div>
+
+    <!-- NEW: The Stage for selected cards (Initially Hidden) -->
+    <div id="selection-stage" class="flex-container" style="display: none; flex-grow: 1; align-items: center;">
+        <!-- Selected cards will be moved here by JS -->
+    </div>
+
     <div class="container-botoes" style="display: none;">
+    <!-- <div class="container-botoes"> -->
         <button type="button" class="botao-texto-grande" id="leituraButton">
             vamos fazer a leitura
         </button>
@@ -28,62 +35,138 @@
 <script nonce="{{ g.nonce }}">
 document.addEventListener('DOMContentLoaded', function () {  
     const cards = document.querySelectorAll('.card');
-    const containerBotoes = document.querySelector('.container-botoes');
-    const leituraButton = document.querySelector('.botao-texto-grande');
     const selectedCardsCount = {{ selected_cards }};
-
     let clickedCards = 0;
     let selectedCardsData = [];
+
+    // 1. The Click Logic
     cards.forEach(card => {
         card.addEventListener('click', () => {
-            if (card.classList.contains('clicked') || clickedCards >= selectedCardsCount) {
+            // FIX: Check if card is already clicked OR currently animating (processing)
+            if (card.classList.contains('clicked') || card.dataset.processing === "true" || clickedCards >= selectedCardsCount) {
                 return;
             }
+            
+            // LOCK THE CARD IMMEDIATELY
+            card.dataset.processing = "true";
+
             const imageUrl = card.getAttribute('data-image');
             const cardName = card.getAttribute('data-name');
             const cardValue = card.getAttribute('data-value');
             const animationDuration = 1000;
+            
             card.style.transition = `transform ${animationDuration}ms ease`;
+            
             if (cardValue === 'invertido') {
                 card.style.transform = "rotateX(180deg)";
             } else {
                 card.style.transform = "rotateY(180deg)";
             }
+            
             setTimeout(() => {
                 card.style.backgroundImage = `url("${imageUrl}")`;
                 card.classList.add('clicked');
+                
+                // Remove the processing lock (though clicked class handles it now)
+                delete card.dataset.processing; 
+                
                 clickedCards++;
                 selectedCardsData.push({ name: cardName, value: cardValue });
+                
+                // CHECK IF DONE
                 if (clickedCards === selectedCardsCount) {
-                    containerBotoes.style.display = 'block';
-                    disableUnselectedCards();
+                    setTimeout(() => {
+                        performTransition();
+                    }, 500);
                 }
             }, animationDuration / 3);
         });
     });
-    function disableUnselectedCards() {
-        cards.forEach(card => {
-            if (!card.classList.contains('clicked')) {
-                card.classList.add('disabled');
-            }
+
+// 2. The Transition Function
+    function performTransition() {
+        const allRows = document.querySelectorAll('.insideCards > .flex-container:not(#selection-stage)');
+        const stage = document.getElementById('selection-stage');
+        const botoes = document.querySelector('.container-botoes');
+        const selectedCards = document.querySelectorAll('.card.clicked');
+        
+        // A. Fade out original rows
+        allRows.forEach(row => {
+            row.style.transition = 'opacity 0.5s ease';
+            row.style.opacity = '0';
+            setTimeout(() => {
+                row.style.display = 'none';
+            }, 500);
         });
+
+        // B. Move cards to stage
+        setTimeout(() => {
+            stage.innerHTML = ''; 
+            
+            // RESET CLASSES: Remove old stage classes and re-add flex-container
+            stage.className = 'flex-container';
+            
+            // APPLY NEW CLASS BASED ON COUNT
+            if (selectedCards.length === 1) {
+                stage.classList.add('stage-1');
+            } else if (selectedCards.length === 3) {
+                stage.classList.add('stage-3');
+            } else if (selectedCards.length === 5) {
+                stage.classList.add('stage-5');
+            }
+
+            selectedCards.forEach(card => {
+                // REMOVED: card.style.margin = '10px';  <-- We let CSS handle this now!
+                
+                card.style.transform = 'none'; 
+                
+                const isInverted = card.getAttribute('data-value') === 'invertido';
+                if(isInverted) {
+                    card.style.transform = "rotateX(180deg)";
+                } else {
+                    card.style.transform = "rotateY(180deg)";
+                }
+                stage.appendChild(card);
+            });
+
+            // Show Stage
+            stage.style.display = 'flex';
+            
+            // Show Button
+            botoes.style.display = 'flex'; 
+            
+            // Pop Animation
+            stage.animate([
+                { transform: 'scale(0.9)', opacity: 0 },
+                { transform: 'scale(1)', opacity: 1 }
+            ], {
+                duration: 500,
+                easing: 'ease-out'
+            });
+
+        }, 500); 
     }
+
+    // 3. The Submit Logic
+    const leituraButton = document.querySelector('#leituraButton'); // Select by ID is safer
     leituraButton.addEventListener('click', function (e) {
         e.preventDefault();
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '{{ url_for("results") }}';
+        
         const dataInput = document.createElement('input');
         dataInput.type = 'hidden';
         dataInput.name = 'selected_cards_data';
         dataInput.value = JSON.stringify(selectedCardsData);
         form.appendChild(dataInput);
-        // CSRF Token: This is the crucial addition
+        
         const csrfInput = document.createElement('input');
         csrfInput.type = 'hidden';
-        csrfInput.name = 'csrf_token'; // Make sure the name matches your backend
-        csrfInput.value = '{{ csrf_token() }}'; // Use Jinja to get the token
+        csrfInput.name = 'csrf_token'; 
+        csrfInput.value = '{{ csrf_token() }}'; 
         form.appendChild(csrfInput);
+        
         document.body.appendChild(form);
         form.submit();
     });
