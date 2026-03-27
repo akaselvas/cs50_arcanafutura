@@ -1,0 +1,240 @@
+{% extends "layout.html" %}
+<!--
+    index.html — Home / Landing Page
+
+    Extends layout.html via Jinja2 template inheritance.
+    This page collects two pieces of user input before the reading begins:
+      1. An optional intention text (typed into the textarea)
+      2. The number of cards to draw (1, 3, or 5)
+
+    On submit, the form is sent asynchronously via the Fetch API to
+    /process_form, which validates it server-side and returns a redirect URL.
+-->
+{% block content %}
+<div class="insideIndex">
+
+    <!--
+        FORM
+        action points to the /process_form Flask route.
+        Submission is intercepted by JavaScript below and sent via
+        fetch() instead, so we can handle the JSON response without
+        a full page reload.
+        
+        Note: The form wraps all the groups so all inputs are submitted together.
+    -->
+    <form id="tarotForm" action="{{ url_for('process_form') }}" method="post">
+
+        <!--
+            CSRF HIDDEN FIELD
+            csrf_token() is a Jinja2 helper injected by Flask-WTF.
+            It renders a unique token tied to this user's session.
+            The server will reject any POST that doesn't include a
+            matching token, preventing Cross-Site Request Forgery attacks.
+        -->
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- ================================================================
+             GROUP 1: Intro text, instructions, and the intention textarea.
+             Grouped together so they scroll and animate as a single unit.
+        ================================================================= -->
+        <div class="text-group">
+
+            <!-- App tagline — sets the mystical tone for the experience. -->
+            <div class="texto-destacado">
+                <p>desvende os mistérios do Tarot com a ajuda da inteligência artificial, explore as profundezas da sua alma e
+                    encontre respostas para suas perguntas.</p>
+            </div>
+
+            <!-- Instructions: tells the user what the textarea is for and that
+                 leaving it blank is perfectly valid (anonymous reading). -->
+            <div class="txt-parafrafo">
+                <p>quer saber o que o futuro reserva?</p>
+                <p>digite sua intenção no campo abaixo para uma leitura personalizada, se preferir manter a intenção em segredo
+                    deixe o campo em branco.</p>
+            </div>
+
+            <!--
+                INTENTION TEXTAREA
+                autocomplete="off" prevents the browser from suggesting
+                previous entries, which would feel out of place for a
+                mystical/personal input like this.
+                rows="3" sets the visible height — actual resize behavior
+                is controlled in CSS.
+            -->
+            <textarea
+                id="intencao"
+                name="intencao"
+                class="chat-input"
+                placeholder="Escreva sua intenção aqui..."
+                autocomplete="off"
+                rows="3"></textarea>
+
+        </div> <!-- End of text-group -->
+
+        <!-- ================================================================
+             GROUP 2: Card count selector (1, 3, or 5).
+             Buttons are type="button" so they don't submit the form on click —
+             they only update the hidden #selectedCards input below.
+        ================================================================= -->
+        <div class="options-container">
+            <p>escolha com quantas cartas você quer jogar</p>
+            <div class="container-botoes">
+                <button type="button" class="botao-personalizado" data-value="1">1</button>
+                <button type="button" class="botao-personalizado" data-value="3">3</button>
+                <button type="button" class="botao-personalizado" data-value="5">5</button>
+            </div>
+        </div>
+
+        <!--
+            HIDDEN CARD COUNT INPUT
+            JavaScript writes the selected value (1, 3, or 5) here when the
+            user clicks one of the buttons above. The server reads this field
+            in /process_form and validates it against the allowed values.
+            Keeping it hidden avoids exposing a raw <input> in the UI.
+        -->
+        <input type="hidden" id="selectedCards" name="selectedCards" value="">
+
+        <!-- GROUP 3: Submit button. Triggers the fetch() handler below. -->
+        <div>
+            <button type="submit" class="botao-texto-grande">
+                vamos começar
+            </button>
+        </div>
+
+    </form> <!-- End Form -->
+
+</div>
+
+<!--
+    PAGE SCRIPT
+    The nonce attribute is required by our Content Security Policy (CSP).
+    Flask generates a unique nonce per request (in before_request()) and
+    stores it in Flask's 'g' object. Jinja2 renders it here so the browser
+    knows this specific inline script is intentional and safe to execute.
+    Without this, the CSP would block all inline scripts entirely.
+-->
+<script nonce="{{ g.nonce }}">
+    document.addEventListener('DOMContentLoaded', function() {
+
+        const form               = document.getElementById('tarotForm');
+        const botoes             = document.querySelectorAll('.botao-personalizado');
+        const selectedCardsInput = document.getElementById('selectedCards');
+        const inputField         = document.getElementById('intencao');
+        const body               = document.body;
+
+        // ----------------------------------------------------------------
+        // TOUCH KEYBOARD DETECTION
+        // On mobile, opening the soft keyboard pushes the layout up and
+        // can hide the focused input behind it. We detect touch devices
+        // using media queries (more reliable than user-agent sniffing) and
+        // add a CSS class that adjusts the layout to keep the field visible.
+        // ----------------------------------------------------------------
+        function isTouchDevice() {
+            // "hover: none"    → no mouse cursor (touch-only device)
+            // "pointer: coarse" → input precision is low (finger, not mouse)
+            return window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+        }
+
+        inputField.addEventListener('focus', function() {
+            if (isTouchDevice()) {
+                // 'keyboard-active' shifts the layout so the textarea
+                // isn't hidden under the soft keyboard.
+                body.classList.add('keyboard-active');
+
+                // Small delay before scrolling to let the keyboard finish
+                // animating into view, then center the input on screen.
+                setTimeout(() => {
+                    inputField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            }
+        });
+
+        inputField.addEventListener('blur', function() {
+            // Remove the class whenever the keyboard closes,
+            // restoring the normal layout regardless of device type.
+            body.classList.remove('keyboard-active');
+        });
+
+        // ----------------------------------------------------------------
+        // CARD COUNT BUTTON SELECTION
+        // Only one button can be active at a time. When one is clicked:
+        //   1. All buttons are dimmed and disabled to prevent re-clicking.
+        //   2. The clicked button is highlighted as the active selection.
+        //   3. Its data-value (1, 3, or 5) is written to the hidden input
+        //      so the server receives it as a standard form field.
+        // ----------------------------------------------------------------
+        botoes.forEach(botao => {
+            botao.addEventListener('click', () => {
+
+                // Reset all buttons to their inactive state first.
+                botoes.forEach(b => {
+                    b.classList.remove('active');
+                    b.style.opacity = '0.5';
+                    b.disabled = true;
+                });
+
+                // Mark the clicked button as selected.
+                botao.classList.add('active');
+                botao.style.opacity = '1';
+
+                // Write the card count value into the hidden form field.
+                selectedCardsInput.value = botao.dataset.value;
+            });
+        });
+
+        // ----------------------------------------------------------------
+        // ASYNC FORM SUBMISSION
+        // We intercept the native form submit and use fetch() instead.
+        // This lets us receive a JSON response from /process_form and
+        // navigate to the redirect URL it returns — giving us control
+        // over error handling without a full page reload.
+        // ----------------------------------------------------------------
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault(); // Stop the browser's default form POST.
+
+            // Guard: ensure the user picked a card count before submitting.
+            if (!selectedCardsInput.value) {
+                alert('Por favor, selecione o número de cartas antes de continuar.');
+                return;
+            }
+
+            // FormData automatically serializes all named form fields,
+            // including the hidden CSRF token and selectedCards inputs.
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        // This header lets Flask distinguish AJAX requests
+                        // from regular browser form submissions in the CSRF
+                        // error handler (see app.py handle_csrf_error).
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    credentials: 'same-origin' // Send the session cookie with the request.
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Server returns { redirect: '/cartas' } on success.
+                    window.location.href = data.redirect;
+                } else {
+                    // If the CSRF token expired, reload to get a fresh one
+                    // rather than showing a confusing error message.
+                    if (data.error && data.error.includes('CSRF')) {
+                        window.location.reload();
+                        return;
+                    }
+                    alert(data.error || 'Ocorreu um erro. Por favor, tente novamente.');
+                }
+            } catch (error) {
+                // Network-level failure (offline, server down, etc.)
+                console.error('Submission error:', error);
+                alert('Ocorreu um erro. Por favor, tente novamente.');
+            }
+        });
+    });
+</script>
+{% endblock %}

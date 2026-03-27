@@ -1,0 +1,357 @@
+{% extends "layout.html" %}
+<!--
+    results.html — Tarot Reading Results Page
+
+    Extends layout.html via Jinja2 template inheritance.
+    This page has two responsibilities:
+      1. Connect to the server via WebSocket and trigger the AI reading generation,
+         then display the result when it arrives.
+      2. Provide an optional slide-up chat interface so the user can ask
+         follow-up questions about their reading.
+
+    The AI generation is NOT done during the Flask route — it's triggered
+    client-side immediately after the page loads via a Socket.IO event.
+    This keeps the HTTP response fast and lets us show a loading animation
+    while the AI is working.
+-->
+{% block content %}
+<div class="insideResult">
+
+    <!--
+        CSRF TOKEN IN A META TAG
+        WebSocket events bypass Flask's standard HTTP middleware, so the CSRF
+        token can't be validated the usual way. Instead, we embed the token in
+        a <meta> tag at render time so JavaScript can read it and include it
+        manually in the 'start_generation' Socket.IO event payload.
+        The server then calls validate_csrf() explicitly inside the handler.
+    -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <!-- ----------------------------------------------------------------
+         READING DISPLAY AREA
+         Shows a loading message while the AI generates the reading.
+         Once the 'generation_complete' Socket.IO event fires, the loading
+         message is hidden and the result area is revealed.
+    ----------------------------------------------------------------- -->
+    <div id="content-wrapper" class="content-wrapper">
+        <div class="txt-resultado">
+
+            <!-- Loading state: visible by default until the reading arrives. -->
+            <p id="loading-message">
+                Estamos gerando sua leitura. Por favor, aguarde
+                <!-- CSS animates these three dots to pulse in sequence. -->
+                <span class="loading-dots">
+                    <span>.</span><span>.</span><span>.</span>
+                </span>
+            </p>
+
+            <!-- Result state: hidden until the AI response is received. -->
+            <div id="result-area" style="display:none;">
+                <p id="tarot-reading"></p>
+                <!-- Button to open the chat panel for follow-up questions. -->
+                <div class="container-botoes">
+                    <button id="open-chat" type="button" class="botao-texto-grande">
+                        quer conversar mais sobre a leitura?
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!--
+        SCROLL SHADOW OVERLAY
+        A decorative gradient div that fades in at the bottom of the content
+        wrapper when the reading text is taller than the visible area.
+        It signals to the user that there is more content to scroll to.
+        Controlled entirely by JavaScript (checkContentOverflow).
+    -->
+    <div id="shadow-overlay" class="shadow-overlay" style="display: none;"></div>
+
+</div>
+
+
+<!-- ----------------------------------------------------------------
+     CHAT INTERFACE
+     A slide-up overlay panel for follow-up conversation about the reading.
+     Both the overlay backdrop and the panel itself start hidden and are
+     revealed together when the user clicks the "open-chat" button.
+----------------------------------------------------------------- -->
+
+<!-- Dark backdrop that appears behind the chat panel (click-to-close UX). -->
+<div id="chat-overlay" class="chat-overlay" style="display: none;"></div>
+
+<div id="chat-interface" class="chat-interface" style="display: none;">
+    <div class="chat-header">
+        <h2>Chat sobre a leitura</h2>
+        <!-- × close button — hides the panel and backdrop. -->
+        <button id="close-chat" class="close-button">&times;</button>
+    </div>
+
+    <!-- Scrollable message history. Messages are appended here by addMessage(). -->
+    <div id="chat-messages" class="chat-messages"></div>
+
+    <div class="chat-input-area">
+        <input type="text" id="user-input" class="chat-input" placeholder="Digite sua mensagem...">
+        <button id="send-message" class="chat-send-button">Enviar</button>
+    </div>
+</div>
+
+
+<!--
+    EXTERNAL LIBRARIES (loaded from CDN)
+    socket.io — client library that manages the WebSocket connection,
+                handles reconnection, and provides the emit/on API.
+    marked     — Markdown parser used to render the AI's Markdown-formatted
+                 chat responses as HTML in the chat window.
+-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.18/marked.min.js"></script>
+
+<script>
+    // ----------------------------------------------------------------
+    // WEBSOCKET SETUP
+    // Read the CSRF token from the <meta> tag injected above.
+    // Leaving the URL empty in io() tells Socket.IO to connect back to
+    // the same host and port that served this page — the correct behavior
+    // in both local dev and on Render, without hardcoding any URL.
+    // ----------------------------------------------------------------
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    const socket = io({
+        transports: ['websocket'], // Force WebSocket only; skip HTTP long-polling fallback
+        upgrade: false             // Don't attempt to upgrade from polling (we skip it entirely)
+    });
+
+
+    // ----------------------------------------------------------------
+    // DOM REFERENCES
+    // Cached upfront so we're not querying the DOM on every event.
+    // ----------------------------------------------------------------
+    const contentWrapper    = document.getElementById('content-wrapper');
+    const resultArea        = document.getElementById('result-area');
+    const shadowOverlay     = document.getElementById('shadow-overlay');
+    const chatInterface     = document.getElementById('chat-interface');
+    const chatOverlay       = document.getElementById('chat-overlay');
+    const openChatButton    = document.getElementById('open-chat');
+    const closeChatButton   = document.getElementById('close-chat');
+    const chatMessages      = document.getElementById('chat-messages');
+    const userInput         = document.getElementById('user-input');
+    const sendMessageButton = document.getElementById('send-message');
+
+    let tarotReading  = '';    // Stores the full reading HTML, sent as context with each chat message
+    let isFirstChatOpen = true; // Tracks whether to show the opening bot greeting
+
+
+    // ----------------------------------------------------------------
+    // TRIGGER AI GENERATION
+    // Fired immediately on page load. Sends the user's session data to
+    // the server's 'start_generation' Socket.IO handler (see app.py).
+    // The CSRF token is included manually because WebSocket events are
+    // not protected by Flask-WTF's automatic middleware.
+    //
+    // Jinja2 injects the server-side session values directly into the
+    // JS payload at render time — no extra HTTP request needed.
+    // ----------------------------------------------------------------
+    socket.emit('start_generation', {
+        intencao:      "{{ intencao }}",
+        selected_cards: "{{ selected_cards }}",
+        choosed_cards:  {{ choosed_cards | tojson }}, // tojson filter safely serializes a Python list to a JS array
+        csrf_token:     csrfToken
+    });
+
+
+    // ----------------------------------------------------------------
+    // SOCKET.IO EVENT HANDLERS
+    // ----------------------------------------------------------------
+
+    // Server emits 'generation_error' if the CSRF token is missing or invalid.
+    socket.on('generation_error', function(data) {
+        console.error("CSRF Error:", data.message);
+        document.getElementById('loading-message').innerText =
+            "Erro: " + data.message + ". Por favor recarregue a página.";
+    });
+
+    // Server emits 'generation_complete' when the AI reading is ready.
+    // We hide the loading message, inject the reading HTML, and store it
+    // in tarotReading so it can be sent as context with later chat messages.
+    socket.on('generation_complete', function(data) {
+        document.getElementById('loading-message').style.display = 'none';
+        resultArea.style.display = 'block';
+        document.getElementById('tarot-reading').innerHTML = data.reading;
+        tarotReading = data.reading;
+
+        // Small delay before checking overflow so the browser has time to
+        // paint the newly injected content and calculate the correct height.
+        setTimeout(checkContentOverflow, 100);
+    });
+
+
+    // ----------------------------------------------------------------
+    // SCROLL SHADOW MANAGEMENT
+    // Shows a gradient shadow at the bottom of the content area when the
+    // reading text overflows its container, hinting there is more to read.
+    // ----------------------------------------------------------------
+
+    function checkContentOverflow() {
+        if (contentWrapper.scrollHeight > contentWrapper.clientHeight) {
+            shadowOverlay.style.display = 'block';
+            // Tiny timeout so 'display: block' registers before the opacity
+            // transition starts — otherwise the fade-in is skipped.
+            setTimeout(() => { shadowOverlay.style.opacity = '1'; }, 10);
+        } else {
+            shadowOverlay.style.opacity = '0';
+        }
+    }
+
+    // Fade out the shadow as the user scrolls toward the bottom,
+    // and bring it back if they scroll back up.
+    contentWrapper.addEventListener('scroll', function() {
+        const threshold = 30; // px tolerance — shadow fades just before hitting the very bottom
+        const atBottom  = contentWrapper.scrollTop + contentWrapper.clientHeight
+                          >= contentWrapper.scrollHeight - threshold;
+
+        if (atBottom) {
+            shadowOverlay.style.opacity = '0';
+        } else if (contentWrapper.scrollHeight > contentWrapper.clientHeight) {
+            shadowOverlay.style.opacity = '1';
+        }
+    });
+
+    // Re-check on resize because the viewport height may change
+    // (e.g. rotating a phone, or a desktop window being resized).
+    window.addEventListener('resize', checkContentOverflow);
+
+
+    // ----------------------------------------------------------------
+    // CHAT PANEL — OPEN / CLOSE
+    // ----------------------------------------------------------------
+
+    openChatButton.addEventListener('click', () => {
+        chatInterface.style.display = 'flex';
+        chatOverlay.style.display   = 'block';
+
+        // Only show the bot's opening greeting on the very first open.
+        // Subsequent opens resume the existing conversation silently.
+        if (isFirstChatOpen) {
+            addMessage('bot', 'Olá, vamos conversar mais sobre sua leitura, o que você quer saber?');
+            isFirstChatOpen = false;
+        }
+    });
+
+    closeChatButton.addEventListener('click', () => {
+        chatInterface.style.display = 'none';
+        chatOverlay.style.display   = 'none';
+    });
+
+
+    // ----------------------------------------------------------------
+    // CHAT — SEND MESSAGE
+    // Triggered by button click or Enter key press.
+    // The full tarot reading is included in the payload so the AI has
+    // context when answering follow-up questions (see app.py handle_message).
+    // ----------------------------------------------------------------
+
+    sendMessageButton.addEventListener('click', sendMessage);
+    userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    function sendMessage() {
+        const message = userInput.value.trim();
+        if (message) {
+            addMessage('user', message);
+            showLoadingIndicator();
+            socket.emit('send_message', { message: message, tarot_reading: tarotReading });
+            userInput.value = '';
+        }
+    }
+
+    // Server emits 'receive_message' with the AI's chat response.
+    socket.on('receive_message', (data) => {
+        removeLoadingIndicator();
+        addMessage('bot', data.message);
+    });
+
+
+    // ----------------------------------------------------------------
+    // CHAT UI HELPERS
+    // ----------------------------------------------------------------
+
+    // Shows an animated "..." bubble while waiting for the bot's response.
+    function showLoadingIndicator() {
+        const loadingDiv = document.createElement('div');
+        loadingDiv.classList.add('chat-message', 'bot-message');
+        loadingDiv.innerHTML = `
+            <div class="chat-message-content">
+                <span class="loading-dots">.<span>.</span><span>.</span><span>.</span></span>
+            </div>`;
+        chatMessages.appendChild(loadingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to latest
+    }
+
+    // Removes the loading bubble. Targets the last message and checks for the
+    // loading-dots class to avoid accidentally removing a real message.
+    function removeLoadingIndicator() {
+        const last = chatMessages.querySelector('.chat-message:last-child');
+        if (last && last.querySelector('.loading-dots')) {
+            last.remove();
+        }
+    }
+
+    // Appends a message bubble to the chat window.
+    // Bot messages are passed through marked.parse() to render Markdown
+    // (e.g. bold text, bullet points) that the AI commonly returns.
+    // User messages are added as plain text — no Markdown parsing needed.
+    function addMessage(sender, content) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('chat-message', sender === 'user' ? 'user-message' : 'bot-message');
+
+        if (sender === 'bot') {
+            content = marked.parse(content); // Convert Markdown → HTML
+        }
+
+        messageDiv.innerHTML = `<div class="chat-message-content">${content}</div>`;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to newest message
+    }
+
+
+    // ----------------------------------------------------------------
+    // MOBILE KEYBOARD FOCUS MODE (Chat Input)
+    // On touch devices, the soft keyboard shrinks the viewport when it
+    // opens, which can push the chat input off screen or hide the latest
+    // message. Adding 'chat-focus-mode' triggers a CSS layout adjustment.
+    //
+    // The hostname check excludes localhost so this never activates during
+    // desktop development, even if DevTools is in mobile emulation mode.
+    // ----------------------------------------------------------------
+
+    function isTouchDevice() {
+        return window.location.hostname !== 'localhost' &&
+               window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+    }
+
+    userInput.addEventListener('focus', () => {
+        if (isTouchDevice()) {
+            chatInterface.classList.add('chat-focus-mode');
+
+            // Wait for the CSS layout to shrink before scrolling,
+            // otherwise scrollHeight is measured before the resize.
+            setTimeout(() => {
+                chatMessages.scrollTo({ top: chatMessages.scrollHeight, behavior: 'smooth' });
+            }, 300);
+        }
+    });
+
+    userInput.addEventListener('blur', () => {
+        // Delay removal so the Send button's click event fires first.
+        // Without this, the layout jumps before the click registers,
+        // causing the send to be missed on some mobile browsers.
+        setTimeout(() => {
+            chatInterface.classList.remove('chat-focus-mode');
+        }, 200);
+    });
+
+</script>
+{% endblock %}

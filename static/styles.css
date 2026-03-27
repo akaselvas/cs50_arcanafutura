@@ -1,0 +1,2689 @@
+/*
+    style.css — Global Stylesheet
+
+    This file covers every visual layer of the app, from the fixed background
+    and decorative corner SVGs all the way to the chat interface and the
+    landscape-rotation blocker.
+
+    Structure:
+      1.  Base (html, body)
+      2.  Corner decorations
+      3.  Rotating centre animation
+      4.  Navbar + main container
+      5.  Index page layout
+      6.  Text styles (headings, paragraphs, textarea)
+      7.  Buttons (card-count selectors and text buttons)
+      8.  Cards page layout & card styles
+      9.  Selection stage (chosen cards overlay)
+      10. Results page layout
+      11. Scroll shadow & indicator
+      12. Loading dots animation
+      13. Custom scrollbar
+      14. Chat overlay & interface
+      15. Breakpoints (mobile portrait → tablet portrait → large tablet → desktop landscape)
+      16. Keyboard focus mode (mobile soft-keyboard layout shift)
+      17. Landscape rotation blocker
+*/
+
+
+/* ================================================ */
+/* 1. BASE                                          */
+/* ================================================ */
+
+html,
+body {
+    height: 99%;
+    /* 99% instead of 100% avoids a 1px scrollbar appearing on some browsers. */
+    margin: 0;
+    background-color: #201433;
+    /* Deep purple — the app's dominant dark tone. */
+    background-image: url(/static/img/texture.jpg);
+    /* Subtle grain texture layered over the flat color. */
+    /* overflow: hidden; */
+    /* Disabled globally — overflow is managed per-container so
+       the results page can scroll while other pages remain locked. */
+}
+
+
+/* ================================================ */
+/* 2. CORNER DECORATIONS                            */
+/* ================================================ */
+
+/*
+    Four SVG corner ornaments are positioned absolutely inside
+    a full-viewport container. The same image is reused four times;
+    CSS transforms mirror and flip it into each corner.
+*/
+
+.container4cantos {
+    height: 100dvh;
+    /* dvh = dynamic viewport height — respects mobile browser chrome. */
+    width: 100vw;
+    position: relative;
+    display: flex;
+    z-index: 0;
+    /* Behind all content layers. */
+}
+
+.decorCantos {
+    background-image: url(/static/img/cardrighttop.svg);
+    background-size: 55%;
+    /* The SVG sits at 55% of the div so it doesn't bleed to the edge. */
+    background-repeat: no-repeat;
+    background-position: center;
+    position: absolute;
+    width: 15vw;
+    height: 15vw;
+}
+
+/* Each corner reuses the same image via transform to avoid four separate assets. */
+.top-left {
+    top: 0;
+    left: 0;
+    transform: scaleX(-1);
+}
+
+/* Flip horizontally. */
+.bottom-left {
+    bottom: 0;
+    left: 0;
+    transform: scale(-1, -1);
+}
+
+/* Flip both axes. */
+.top-right {
+    top: 0;
+    right: 0;
+}
+
+/* Original orientation. */
+.bottom-right {
+    bottom: 0;
+    right: 0;
+    transform: scaleY(-1);
+}
+
+/* Flip vertically. */
+
+
+/* ================================================ */
+/* 3. ROTATING CENTRE ANIMATION                     */
+/* ================================================ */
+
+/*
+    A large decorative SVG rotates slowly behind all content,
+    giving the app a living, mystical atmosphere.
+    opacity: 7% keeps it clearly a background element.
+*/
+
+.decorCentro {
+    position: fixed;
+    /* Fixed so it doesn't scroll with content. */
+    top: 0;
+    left: 0;
+    height: 100dvh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    opacity: 7%;
+    z-index: 1;
+    /* Above the corner container but below all page content. */
+}
+
+.decorCentroAnimate {
+    /*
+        Oversized on purpose (140vw / 140dvh) so the corners of the
+        rotating element never reveal the page background as it spins.
+    */
+    width: 140vw;
+    max-height: 140dvh;
+    max-width: 140dvh;
+    object-fit: contain;
+    animation: rotacao 60s linear infinite;
+    /* One full rotation every 60 seconds. */
+}
+
+@keyframes rotacao {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
+/* ================================================ */
+/* 4. NAVBAR + MAIN CONTAINER                       */
+/* ================================================ */
+
+.navbar {
+    /* border: 1px solid gray; */
+    /* Debugging aid — leave commented out. */
+    width: 100%;
+    height: 7dvh;
+    position: fixed;
+    /* Stays at the top while content scrolls beneath. */
+    top: 0;
+    left: 0;
+    z-index: 3;
+    /* Above background layers, below chat panel (z-index 999). */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.navbar .logo {
+    font-family: 'Averia Libre', cursive;
+    /* Averia Libre gives the logo a hand-drawn, antique feel. */
+    font-weight: bold;
+    font-style: italic;
+    letter-spacing: 1px;
+    color: #E9DBAE;
+    /* Warm beige — the app's main text color on dark backgrounds. */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    font-size: calc(0.65 * 7dvh);
+    /* Scales with the navbar height so it always fits. */
+}
+
+.container {
+    /* border: 1px solid gray; */
+    /* Debugging aid — leave commented out. */
+    position: absolute;
+    top: 7dvh;
+    /* Pushed down below the fixed navbar. */
+    height: 85dvh;
+
+    width: 95%;
+    /* Near-full width on mobile. */
+    max-width: 1600px;
+    /* Caps the layout on ultra-wide desktops. */
+    left: 50%;
+    transform: translateX(-50%);
+    /* Centers the container regardless of width — cleaner than margin: auto. */
+
+    display: flex;
+    justify-content: center;
+    z-index: 4;
+}
+
+
+/* ================================================ */
+/* 5. INDEX PAGE LAYOUT                             */
+/* ================================================ */
+
+.insideIndex {
+    height: 100%;
+    width: 100%;
+    max-width: 800px;
+    /* Keeps the form from stretching too wide on tablets. */
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    /* Distributes the three groups evenly across the available height. */
+    align-items: center;
+
+    padding-top: 5dvh;
+    box-sizing: border-box;
+    padding-bottom: 15dvh;
+    /* Reserve space at the bottom so the submit button clears the viewport edge. */
+}
+
+/* Groups the intro text and the intention textarea as a single scrollable/animatable unit. */
+.text-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+/* Fine-grained spacing control between the headline and the paragraph. */
+.text-group .texto-destacado {
+    margin-bottom: 0px;
+    padding: 0 1px;
+}
+
+/* Fine-grained spacing control between the paragraph and the textarea. */
+.text-group .txt-parafrafo {
+    margin-bottom: 15px;
+    padding: 0 10px;
+}
+
+/* Wraps the card-count label and the 1 / 3 / 5 buttons. */
+.options-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Averia Serif Libre', serif;
+    font-weight: 300;
+    color: #E9DBAE;
+    font-size: 1.5rem;
+    text-align: center;
+    margin-bottom: 80px;
+    /* Pushes the submit button toward the bottom of the viewport. */
+}
+
+.options-container p {
+    margin-top: 100px;
+    margin-bottom: -20px;
+    /* Pulls the buttons up toward the label, tightening the visual group. */
+    position: relative;
+}
+
+/*
+    display: contents removes the <form> from the layout flow so its
+    child divs behave as direct children of .insideIndex for Flexbox purposes.
+    Without this, the form wrapper would break the space-between distribution.
+*/
+#tarotForm {
+    display: contents;
+}
+
+/* Generic child box inside the index layout — height is always auto to let content breathe. */
+.insideIndex>div,
+#tarotForm>div {
+    height: auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    /* border: 1px solid rgba(128, 128, 128, 0.3); */
+    /* Debugging aid. */
+}
+
+/* Smooth opacity fade when a button transitions from active to inactive. */
+.botao-personalizado {
+    transition: opacity 0.3s ease;
+}
+
+.botao-personalizado.active {
+    opacity: 1 !important;
+    /* !important overrides the JS-set inline opacity: 0.5 on sibling buttons. */
+}
+
+
+/* ================================================ */
+/* 6. TEXT STYLES                                   */
+/* ================================================ */
+
+/* Large gold headline — used for the app tagline on the index page. */
+.texto-destacado {
+    font-family: 'Averia Serif Libre', serif;
+    font-weight: bold;
+    color: #7D6B2E;
+    /* Antique gold — contrasts against the dark background without being harsh. */
+    letter-spacing: 1px;
+    justify-content: center;
+    font-size: 2.2rem;
+    line-height: 1;
+    text-align: center;
+}
+
+/* Body paragraph text — lighter weight for secondary information. */
+.txt-parafrafo {
+    font-family: 'Averia Serif Libre', serif;
+    font-weight: 300;
+    color: #E9DBAE;
+    font-size: 1.5rem;
+    text-align: center;
+    letter-spacing: 1px;
+    justify-content: center;
+    padding: 5px;
+    box-sizing: border-box;
+    line-height: 1.2;
+    align-items: center;
+    width: 70%;
+    word-break: break-word;
+    hyphens: none;
+    /* Disabling hyphens preserves the natural, mystical rhythm of the Portuguese text. */
+}
+
+/*
+    The intention textarea where the user types their reading question.
+    Designed to feel like writing in a journal rather than filling out a form.
+*/
+textarea {
+    width: 70%;
+    height: auto;
+    min-height: 100px;
+    padding: 15px;
+    font-family: 'Averia Serif Libre', serif;
+    font-size: 1.2rem;
+    text-align: center;
+    line-height: 1.4;
+    color: #E9DBAE;
+    background-color: rgba(255, 255, 255, 0.05);
+    /* Just barely lighter than the page — subtle depth. */
+    border: 1px solid #7D6B2E;
+    border-radius: 15px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    resize: none;
+    /* Prevents the browser's drag-to-resize handle, which would look out of place here. */
+    outline: none;
+    /* Removes the browser's default focus ring; we apply our own via :focus below. */
+}
+
+textarea::placeholder {
+    font-family: 'Averia Serif Libre', serif;
+    font-size: 1.1rem;
+    color: rgba(233, 219, 174, 0.5);
+    /* #E9DBAE at 50% opacity — visible but clearly secondary. */
+}
+
+/* Custom focus ring matches our gold palette instead of the browser default blue. */
+textarea:focus {
+    border-color: #E9DBAE;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+
+/* ================================================ */
+/* 7. BUTTONS                                       */
+/* ================================================ */
+
+/* Small square card-count selector buttons (1, 3, 5). */
+.botao-personalizado {
+    width: 58px;
+    height: 58px;
+    background-color: #201433;
+    border: 1px solid #7D6B2E;
+    border-radius: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0px 14px 15px -6px rgba(0, 0, 0, 0.4);
+    /* Lifted shadow to give a tactile, pressable feel. */
+    margin: 0 10px;
+    font-family: 'Averia Serif Libre', serif;
+    font-weight: 300;
+    font-style: italic;
+    font-size: 40px;
+    color: #7D6B2E;
+}
+
+/* Hover and active states are identical — "pressed" looks the same as "hovered". */
+.botao-personalizado:hover,
+.botao-personalizado.active {
+    background-color: #7D6B2E;
+    /* Inverts the color scheme: gold background, dark text. */
+    border: 1px solid #201433;
+    box-shadow: none;
+    /* Remove the lift shadow to simulate pressing down. */
+    color: #201433;
+    cursor: pointer;
+}
+
+/* Container for the 1 / 3 / 5 buttons row. */
+.container-botoes {
+    display: flex;
+    justify-content: center;
+    margin-top: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* Larger pill-shaped text button used for primary actions ("vamos começar", "ver leitura"). */
+.botao-texto-grande {
+    width: auto;
+    height: 30px;
+    padding: 15px 25px;
+    background-color: #201433;
+    border: 1px solid #7D6B2E;
+    border-radius: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0px 14px 15px -6px rgba(0, 0, 0, 0.4);
+    margin: 0 10px;
+    font-family: 'Averia Serif Libre', serif;
+    font-weight: 300;
+    font-style: italic;
+    font-size: 30px;
+    color: #7D6B2E;
+}
+
+.botao-texto-grande:hover {
+    background-color: #7D6B2E;
+    border: 1px solid #201433;
+    box-shadow: none;
+    color: #201433;
+    cursor: pointer;
+}
+
+
+/* ================================================ */
+/* 8. CARDS PAGE LAYOUT & CARD STYLES               */
+/* ================================================ */
+
+/* Full-height flex column that distributes the three card rows and the confirm button. */
+.insideCards {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    /* Equal breathing room above, between, and below each row. */
+    align-items: center;
+    padding-bottom: 2dvh;
+    box-sizing: border-box;
+}
+
+/* Each of the three card rows is a centered horizontal flex container. */
+.flex-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    min-height: min-content;
+    /* Prevents the row from collapsing to 0 height on short screens. */
+}
+
+/* The confirm button row always reserves its 60px slot, even before it becomes visible. */
+.container-botoes {
+    height: 60px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Individual tarot card — styled as a face-down tile with the card back image. */
+.card {
+    background-color: #201433;
+    background-image: url(/static/img/back2.jpg);
+    background-size: 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 140px;
+    height: calc(140px * 1.93);
+    /* 1.93 is the standard Tarot card aspect ratio (roughly 2.75" × 4.75"). */
+    margin: 10px 30px;
+    text-align: center;
+    border: 1px solid #7D6B2E;
+    border-radius: 14px;
+    cursor: pointer;
+    box-shadow: 0px 14px 15px -6px rgba(0, 0, 0, 0.4);
+    transform-style: preserve-3d;
+    /* Required for the JS 3D flip animation to render correctly. */
+    position: relative;
+}
+
+/* Once clicked, pointer-events are disabled so the card can't be selected twice. */
+.card.clicked {
+    pointer-events: none;
+}
+
+/* Cards not selected after the quota is reached are faded out and locked. */
+.card.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/*
+    REVERSED CARD ORIENTATION
+    In Tarot, a card drawn upside-down ("invertido") has a different meaning.
+    We rotate the entire card 180° and also flip the drop shadow direction
+    so it appears to hang from above rather than cast shadow below.
+*/
+.card[data-value="invertido"] {
+    transform: rotate(180deg);
+    box-shadow: 0px -14px 15px -6px rgba(0, 0, 0, 0.4);
+}
+
+/* Hover scale — skipped for reversed cards, which get their own hover rule below. */
+.card:not([data-value="invertido"]):hover {
+    box-shadow: 0px 0px 45px -6px rgba(255, 230, 0, 0.03);
+    transform: scale(1.05);
+}
+
+/* Reversed card hover must maintain the 180° rotation alongside the scale. */
+.card[data-value="invertido"]:hover {
+    box-shadow: 0px 0px 45px -6px rgba(255, 230, 0, 0.03);
+    transform: scale(1.05) rotate(180deg);
+}
+
+
+/* ================================================ */
+/* 9. SELECTION STAGE (CHOSEN CARDS OVERLAY)        */
+/* ================================================ */
+
+/*
+    After the user picks their cards, the chosen ones are moved
+    into a #selection-stage overlay that displays them prominently.
+    Three modifier classes (stage-1, stage-3, stage-5) adjust sizing
+    and layout based on how many cards were selected.
+*/
+
+#selection-stage {
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    transition: all 0.5s ease;
+}
+
+/* 1 card: maximum presence, subtle glow. */
+#selection-stage.stage-1 {
+    gap: 0;
+}
+
+#selection-stage.stage-1 .card {
+    width: 240px;
+    height: calc(240px * 1.93);
+    margin: 0;
+    box-shadow: 0px 0px 50px rgba(233, 219, 174, 0.2);
+}
+
+/* 3 cards: medium size with generous spacing. */
+#selection-stage.stage-3 {
+    gap: 80px;
+}
+
+#selection-stage.stage-3 .card {
+    width: 260px;
+    height: calc(260px * 1.93);
+    margin: 0;
+}
+
+/* 5 cards: tightest spacing to fit all five without overflow. */
+#selection-stage.stage-5 {
+    gap: 70px;
+}
+
+#selection-stage.stage-5 .card {
+    width: 210px;
+    height: calc(210px * 1.93);
+    margin: 0;
+}
+
+
+/* ================================================ */
+/* 10. RESULTS PAGE LAYOUT                          */
+/* ================================================ */
+
+/*
+    The results page uses a narrow reading column (52% on desktop)
+    to keep long AI-generated text comfortable to read — like a book column.
+    overflow: hidden on the wrapper clips the scroll shadow overlay cleanly.
+*/
+.insideResult {
+    height: 100%;
+    width: 52%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    padding-top: 20px;
+}
+
+/* The reading text area grows to fill the available height and scrolls independently. */
+.content-wrapper {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+/* Mate is a readable serif chosen for long-form reading — distinct from the decorative Averia family. */
+.txt-resultado {
+    font-family: "Mate", serif;
+    font-weight: 400;
+    font-style: normal;
+    color: #E9DBAE;
+    font-size: 20px;
+    text-align: left;
+    box-sizing: border-box;
+    line-height: 1;
+    hyphens: none;
+    padding: 10px 50px 0;
+}
+
+/* Spacing above and below the "chat about your reading" button. */
+.container-botoes {
+    padding-top: 40px;
+    padding-bottom: 20px;
+}
+
+.spacer {
+    height: 100px;
+    /* Breathing room at the end of long readings before the button. */
+}
+
+
+/* ================================================ */
+/* 11. SCROLL SHADOW & INDICATOR                    */
+/* ================================================ */
+
+/*
+    A gradient overlay fades the bottom of the reading area to suggest
+    more content exists below. It uses opacity transitions so it fades in
+    smoothly when content overflows and fades out when the user scrolls down.
+
+    pointer-events: none is critical — without it, the overlay would block
+    clicks on the "chat" button sitting below the reading text.
+*/
+.shadow-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 180px;
+
+    /* Multi-stop gradient: mostly transparent at top, fully opaque at bottom.
+       The 0%–40% transparent zone prevents the fade from cutting into the readable text. */
+    background: linear-gradient(to bottom,
+            rgba(32, 20, 51, 0) 0%,
+            rgba(32, 20, 51, 0.2) 40%,
+            rgba(32, 20, 51, 0.8) 80%,
+            rgba(32, 20, 51, 1) 100%);
+
+    pointer-events: none;
+    z-index: 10;
+
+    /* Start fully transparent; JavaScript sets opacity to 1 when content overflows. */
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out;
+}
+
+/* Bouncing arrow that appears alongside the shadow overlay. */
+.scroll-indicator {
+    color: #7D6B2E;
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    animation: bounce 1s infinite;
+    z-index: 2;
+    transition: opacity 0.3s ease;
+}
+
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateX(-50%) translateY(0);
+    }
+
+    50% {
+        transform: translateX(-50%) translateY(5px);
+    }
+}
+
+
+/* ================================================ */
+/* 12. LOADING DOTS ANIMATION                       */
+/* ================================================ */
+
+/*
+    Three dots animate in sequence with a staggered delay,
+    creating the classic "typing..." effect while the AI generates.
+    Each span starts invisible (opacity: 0) and pulses to visible.
+*/
+.loading-dots span {
+    opacity: 0;
+    animation: blink 1.4s infinite;
+}
+
+.loading-dots span:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.loading-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes blink {
+    0% {
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+
+/* ================================================ */
+/* 13. CUSTOM SCROLLBAR                             */
+/* ================================================ */
+
+/*
+    The default browser scrollbar breaks the mystical aesthetic.
+    We replace it with a thin gold-on-dark version.
+    Firefox uses the shorthand scrollbar properties;
+    Chrome/Safari/Edge require the ::-webkit-scrollbar pseudo-elements.
+*/
+.content-wrapper {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-bottom: 50px;
+    scroll-behavior: smooth;
+
+    /* Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: #7D6B2E rgba(32, 20, 51, 0.5);
+}
+
+/* Chrome / Safari / Edge */
+.content-wrapper::-webkit-scrollbar {
+    width: 6px;
+}
+
+.content-wrapper::-webkit-scrollbar-track {
+    background: rgba(32, 20, 51, 0.3);
+    border-radius: 10px;
+}
+
+.content-wrapper::-webkit-scrollbar-thumb {
+    background-color: #7D6B2E;
+    border-radius: 10px;
+    border: 1px solid #201433;
+}
+
+.content-wrapper::-webkit-scrollbar-thumb:hover {
+    background-color: #E9DBAE;
+}
+
+
+/* ================================================ */
+/* 14. CHAT OVERLAY & INTERFACE                     */
+/* ================================================ */
+
+/*
+    The chat panel slides over the reading as a fixed modal.
+    A full-screen backdrop sits behind it; backdrop-filter: blur() gives
+    it a frosted-glass effect so the reading is still vaguely visible
+    through the overlay — reinforcing that the conversation is about it.
+*/
+
+.chat-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(32, 20, 51, 0.6);
+    /* Semi-transparent purple matches the app's color scheme. */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    /* Required prefix for Safari. */
+    z-index: 998;
+    /* Just below the chat panel (999) but above everything else. */
+    transition: all 0.3s ease;
+}
+
+.chat-interface {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /* True center regardless of panel dimensions. */
+    width: 80%;
+    max-width: 500px;
+    height: 80%;
+    max-height: 600px;
+    background-color: #1a1129;
+    /* Slightly darker than the page background to make the panel pop. */
+    border: 1px solid #7D6B2E;
+    /* Gold border ties the panel into the overall design language. */
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    /* Two-layer shadow: a deep drop shadow for depth, and a faint gold rim for the premium feel. */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8),
+        0 0 0 1px rgba(125, 107, 46, 0.3);
+
+    font-family: 'Averia Serif Libre', serif;
+    z-index: 999;
+}
+
+/* Dark header strip with the chat title and close button. */
+.chat-header {
+    background-color: #120a1f;
+    /* Deepest tone in the palette — makes the header a clear anchor. */
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #7D6B2E;
+}
+
+.chat-header h2 {
+    color: #E9DBAE;
+    margin: 0;
+    font-weight: 700;
+    font-size: 24px;
+}
+
+/* × close button — unstyled except for color so it doesn't look like a form element. */
+.close-button {
+    background: none;
+    border: none;
+    color: #7D6B2E;
+    font-size: 28px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.close-button:hover {
+    color: #E9DBAE;
+}
+
+/* Scrollable message history. flex-direction: column stacks messages top to bottom. */
+.chat-messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Base message bubble shared by user and bot. */
+.chat-message {
+    border-radius: 10px;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    max-width: 80%;
+    font-weight: 300;
+    color: #E9DBAE;
+}
+
+/* User messages align right, bot messages align left — standard chat convention. */
+.user-message {
+    background-color: #281a3e;
+    /* Slightly lighter purple to distinguish from bot. */
+    align-self: flex-end;
+    margin-left: auto;
+}
+
+.bot-message {
+    background-color: #120a1f;
+    /* Same as the header — creates visual consistency for "the app". */
+    align-self: flex-start;
+    margin-right: auto;
+}
+
+.chat-message-content {
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+/* Input row at the bottom of the chat panel. */
+.chat-input-area {
+    display: flex;
+    padding: 12px 15px;
+    background-color: #120a1f;
+    border-top: 1px solid #7D6B2E;
+    align-items: center;
+    min-height: 60px;
+    /* Prevents the row from collapsing if the input is very short. */
+}
+
+/* The text input inside the chat panel — reuses the .chat-input class from the index textarea. */
+.chat-input {
+    flex-grow: 1;
+    background-color: #201433;
+    border: 1px solid #7D6B2E;
+    border-radius: 5px;
+    padding: 10px;
+    color: #E9DBAE;
+    font-family: 'Averia Serif Libre', serif;
+    font-size: 16px;
+    height: 40px;
+    box-sizing: border-box;
+}
+
+.chat-input::placeholder {
+    color: #7D6B2E;
+}
+
+.chat-send-button {
+    background-color: #201433;
+    border: 1px solid #7D6B2E;
+    border-radius: 5px;
+    color: #7D6B2E;
+    cursor: pointer;
+    font-family: 'Averia Serif Libre', serif;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    /* Prevents the button being squished when the input grows. */
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 10px;
+    padding: 0 15px;
+}
+
+.chat-send-button:hover {
+    background-color: #7D6B2E;
+    color: #201433;
+}
+
+/* Markdown rendering overrides — the AI uses bold/italic/links in its replies. */
+.chat-message-content strong {
+    font-weight: bold;
+    color: #FFD700;
+}
+
+.chat-message-content em {
+    font-style: italic;
+}
+
+.chat-message-content a {
+    color: #7D6B2E;
+    text-decoration: underline;
+}
+
+
+/* ================================================ */
+/* 15. BREAKPOINTS                                  */
+/* ================================================ */
+
+/*
+    Breakpoints target specific device categories in portrait orientation.
+    Each block only overrides what changes — base styles remain in effect.
+
+    Breakpoint map:
+      ≤ 390px  portrait   — Small phones (iPhone SE, older Androids)
+      391–540px portrait  — Standard phones (iPhone 14, Pixel 7)
+      541–768px portrait  — Large phones / small tablets
+      769–1081px portrait — Tablets (iPad, Galaxy Tab)
+      1024–1920px landscape — Desktop & landscape tablets
+*/
+
+/* -------- Small phones (≤ 390px portrait) -------- */
+@media (max-width: 390px) and (orientation: portrait) {
+
+    /* Corner decor scales up relative to the narrower screen. */
+    .decorCantos {
+        background-size: 85%;
+        width: 22vw;
+        height: 22vw;
+    }
+
+    .top-left {
+        top: 12vw;
+        left: 3vw;
+        transform: scaleX(-1);
+    }
+
+    .bottom-left {
+        bottom: 3vw;
+        left: 3vw;
+        transform: scale(-1, -1);
+    }
+
+    .top-right {
+        top: 12vw;
+        right: 3vw;
+    }
+
+    .bottom-right {
+        bottom: 3vw;
+        right: 3vw;
+        transform: scaleY(-1);
+    }
+
+    /* The rotating background SVG is wider relative to the narrow viewport. */
+    .decorCentroAnimate {
+        width: 220vw;
+    }
+
+    .navbar {
+        height: 6dvh;
+    }
+
+    .navbar .logo {
+        font-size: calc(0.60 * 6dvh);
+    }
+
+    .container {
+        top: 6dvh;
+        height: 90dvh;
+        width: 75%;
+    }
+
+    .insideIndex {
+        padding-top: 3dvh;
+    }
+
+    .text-group .texto-destacado {
+        margin-bottom: 2dvh;
+        padding: 0 3dvh;
+    }
+
+    .text-group .txt-parafrafo {
+        margin-bottom: 1dvh;
+        padding: 0 2dvh;
+    }
+
+    .options-container {
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+    }
+
+    .options-container p {
+        font-size: 1.1rem;
+        margin-top: 6dvh;
+        width: 70%;
+    }
+
+    .texto-destacado {
+        font-size: 1.2rem;
+        line-height: 1;
+    }
+
+    .txt-parafrafo {
+        font-size: 0.9rem;
+        width: 100%;
+    }
+
+    textarea {
+        width: 70%;
+        min-height: 50px;
+        padding: 15px;
+        font-size: 0.8rem;
+    }
+
+    textarea::placeholder {
+        font-size: 0.8rem;
+    }
+
+    .botao-personalizado {
+        width: 38px;
+        height: 38px;
+        border-radius: 9px;
+        font-size: 27px;
+        margin: 0 15px;
+    }
+
+    .container-botoes {
+        padding-top: 3dvh;
+        padding-bottom: 5dvh;
+    }
+
+    .botao-texto-grande {
+        height: 30px;
+        padding: 15px 25px;
+        font-size: 23px;
+    }
+
+    /* Prevent the page body from scrolling — the card grid handles its own layout. */
+    html,
+    body {
+        height: 100dvh;
+        overflow: hidden !important;
+    }
+
+    /*
+        MOBILE CARD GRID
+        On small screens we switch from the desktop flex-rows layout to a
+        CSS Grid with 4 columns × 6 rows. This guarantees all 22 cards fit
+        in the viewport without any scrolling or overflow.
+    */
+    .insideCards {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(6, 1fr);
+        /* 1fr means "share available height equally". */
+        align-content: center;
+        justify-items: center;
+        height: 100dvh;
+        width: 100%;
+        padding: 4dvh 0dvh 13dvh 0dvh;
+        /* Top: navbar clearance. Bottom: confirm button clearance. */
+        box-sizing: border-box;
+    }
+
+    /*
+        display: contents makes the .flex-container row wrappers invisible
+        to the Grid, so all 22 cards participate directly in the grid layout
+        regardless of which row wrapper they're in.
+    */
+    .insideCards>.flex-container:not(#selection-stage) {
+        display: contents;
+    }
+
+    /* The 6th card in the last row needs to start at column 2 to centre the two orphan cards. */
+    .insideCards>.flex-container:nth-of-type(3) .card:nth-child(6) {
+        grid-column-start: 2;
+    }
+
+    /* Cards fill their grid cell; width is auto-calculated from the aspect ratio. */
+    .card {
+        height: 90%;
+        width: auto;
+        aspect-ratio: 1 / 1.93;
+        border-radius: 5px;
+        margin: 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /*
+        SELECTION STAGE — MOBILE
+        After cards are picked, the stage overlays the full viewport.
+        pointer-events: none on the container lets clicks pass through
+        to the background; individual cards re-enable pointer events.
+        Background is transparent (unlike earlier versions that used a dark fill)
+        so the unselected deck remains faintly visible behind the stage.
+    */
+    #selection-stage {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100dvh;
+        background-color: transparent;
+        z-index: 50;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    #selection-stage .card {
+        pointer-events: auto;
+        height: auto;
+        margin-bottom: 0;
+    }
+
+    /* 1 card: centred vertically, large. padding-bottom accounts for the confirm button. */
+    #selection-stage.stage-1 {
+        padding-bottom: 18dvh;
+        box-sizing: border-box;
+    }
+
+    #selection-stage.stage-1 .card {
+        height: 45dvh;
+        width: calc(45dvh / 1.93);
+        aspect-ratio: 1 / 1.93;
+        margin: 0;
+    }
+
+    /* 3 cards: stacked vertically since the screen is too narrow for a horizontal row. */
+    #selection-stage.stage-3 {
+        flex-direction: column;
+        gap: 25px;
+        padding-bottom: 18dvh;
+        box-sizing: border-box;
+    }
+
+    #selection-stage.stage-3 .card {
+        height: 23dvh;
+        width: calc(23dvh / 1.93);
+        margin: 0;
+    }
+
+    /* 5 cards: wraps into a 3+2 arrangement via flex-wrap. */
+    #selection-stage.stage-5 {
+        flex-wrap: wrap;
+        align-content: center;
+        justify-content: center;
+        gap: 18px;
+        padding-bottom: 18dvh;
+        box-sizing: border-box;
+    }
+
+    #selection-stage.stage-5 .card {
+        height: 23dvh;
+        width: calc(23dvh / 1.93);
+    }
+
+    /* The confirm button is fixed to the bottom of the screen above the stage overlay. */
+    .container-botoes {
+        position: fixed;
+        bottom: 4dvh;
+        width: 100%;
+        height: auto;
+        z-index: 60;
+        pointer-events: auto;
+        margin: 0;
+        padding: 0;
+    }
+
+    .botao-texto-grande {
+        font-size: 1.2rem;
+        padding: 12px 30px;
+        background-color: #201433;
+        border: 1px solid #7D6B2E;
+    }
+
+    /* RESULTS PAGE — MOBILE */
+    .insideResult {
+        width: 95%;
+        height: 95%;
+        padding-top: 1dvh;
+        margin: 0 auto;
+    }
+
+    .txt-resultado {
+        padding: 10px 15px 0;
+        font-size: 1.1rem;
+        line-height: 1.3;
+    }
+
+    /* The button flows naturally in the document rather than being fixed, so it scrolls into view. */
+    .insideResult .container-botoes {
+        position: static;
+        margin-top: 15px;
+        padding-bottom: 40px;
+        width: 100%;
+        height: auto;
+        transform: none;
+    }
+
+    /* Force the scrollbar to always render on iOS (it hides by default). */
+    .content-wrapper {
+        overflow-y: scroll;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .content-wrapper::-webkit-scrollbar {
+        width: 5px;
+        display: block;
+    }
+
+    .content-wrapper::-webkit-scrollbar-track {
+        background: rgba(32, 20, 51, 0.3);
+    }
+
+    .content-wrapper::-webkit-scrollbar-thumb {
+        background-color: #7D6B2E;
+        border-radius: 10px;
+    }
+
+    /*
+        CHAT FOCUS MODE — MOBILE
+        When the soft keyboard opens, the viewport shrinks significantly.
+        'chat-focus-mode' (added by JS on input focus) collapses the chat
+        panel to the top of the screen so the keyboard doesn't hide the input.
+    */
+    .chat-interface.chat-focus-mode {
+        top: 2dvh;
+        transform: translate(-50%, 0);
+        height: auto;
+        max-height: 38dvh;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
+    }
+
+    .chat-interface.chat-focus-mode .chat-header {
+        display: none;
+    }
+
+    /* Reclaim vertical space. */
+    .chat-interface.chat-focus-mode .chat-messages {
+        flex-grow: 0;
+        height: 100px;
+        padding: 8px;
+        background-color: rgba(0, 0, 0, 0.3);
+    }
+
+    .chat-interface.chat-focus-mode .chat-input-area {
+        padding: 6px 10px;
+        min-height: 45px;
+    }
+
+    .chat-interface.chat-focus-mode .chat-input,
+    .chat-interface.chat-focus-mode .chat-send-button {
+        height: 32px;
+        font-size: 13px;
+    }
+}
+
+/* -------- Standard phones (391–540px portrait) -------- */
+@media (min-width: 391px) and (max-width: 540px) and (orientation: portrait) {
+
+    .decorCantos {
+        background-size: 90%;
+        width: 22vw;
+        height: 22vw;
+    }
+
+    .top-left {
+        top: 12dvw;
+        left: 3dvw;
+        transform: scaleX(-1);
+    }
+
+    .bottom-left {
+        bottom: 3dvw;
+        left: 3dvw;
+        transform: scale(-1, -1);
+    }
+
+    .top-right {
+        top: 12dvw;
+        right: 3dvw;
+    }
+
+    .bottom-right {
+        bottom: 3dvw;
+        right: 3dvw;
+        transform: scaleY(-1);
+    }
+
+    .decorCentroAnimate {
+        width: 130dvw;
+    }
+
+    .navbar {
+        height: 6dvh;
+    }
+
+    .navbar .logo {
+        font-size: calc(0.60 * 7dvh);
+    }
+
+    .container {
+        top: 7dvh;
+        height: 90dvh;
+        width: 75%;
+    }
+
+    .insideIndex {
+        padding-top: 4dvh;
+    }
+
+    .text-group .texto-destacado {
+        margin-bottom: 1dvh;
+        padding: 0 3dvh;
+    }
+
+    .text-group .txt-parafrafo {
+        margin-bottom: 1dvh;
+        padding: 0 1dvh;
+    }
+
+    .options-container {
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+    }
+
+    .options-container p {
+        font-size: 1.1rem;
+        margin-top: 4dvh;
+        width: 90%;
+    }
+
+    .texto-destacado {
+        font-size: 1.3rem;
+        line-height: 1;
+    }
+
+    .txt-parafrafo {
+        font-size: 1rem;
+        width: 100%;
+    }
+
+    textarea {
+        width: 85%;
+        min-height: 50px;
+        padding: 15px;
+        font-size: 1rem;
+    }
+
+    textarea::placeholder {
+        font-size: 0.8rem;
+    }
+
+    .botao-personalizado {
+        width: 38px;
+        height: 38px;
+        border-radius: 9px;
+        font-size: 27px;
+        margin: 0 15px;
+    }
+
+    .container-botoes {
+        padding-top: 3vh;
+        padding-bottom: 5vh;
+    }
+
+    .botao-texto-grande {
+        height: 30px;
+        padding: 15px 25px;
+        font-size: 23px;
+    }
+
+    html,
+    body {
+        height: 100dvh;
+        overflow: hidden !important;
+    }
+
+    /* Card grid — same 4×6 logic as the small phone breakpoint. */
+    .insideCards {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(6, 1fr);
+        align-content: center;
+        justify-items: center;
+        height: 100dvh;
+        width: 100%;
+        padding: 4dvh 0dvh 13dvh 0dvh;
+        box-sizing: border-box;
+    }
+
+    .insideCards>.flex-container:not(#selection-stage) {
+        display: contents;
+    }
+
+    .insideCards>.flex-container:nth-of-type(3) .card:nth-child(6) {
+        grid-column-start: 2;
+    }
+
+    .card {
+        height: 90%;
+        width: auto;
+        aspect-ratio: 1 / 1.93;
+        border-radius: 5px;
+        margin: 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    #selection-stage {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100dvh;
+        background-color: transparent;
+        z-index: 50;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    #selection-stage .card {
+        pointer-events: auto;
+        height: auto;
+        margin-bottom: 0;
+    }
+
+    #selection-stage.stage-1 {
+        padding-bottom: 18dvh;
+        box-sizing: border-box;
+    }
+
+    #selection-stage.stage-1 .card {
+        height: 45dvh;
+        width: calc(45dvh / 1.93);
+        aspect-ratio: 1 / 1.93;
+        margin: 0;
+    }
+
+    #selection-stage.stage-3 {
+        flex-direction: column;
+        gap: 25px;
+        padding-bottom: 18dvh;
+        box-sizing: border-box;
+    }
+
+    #selection-stage.stage-3 .card {
+        height: 23dvh;
+        width: calc(23dvh / 1.93);
+        margin: 0;
+    }
+
+    #selection-stage.stage-5 {
+        flex-wrap: wrap;
+        align-content: center;
+        justify-content: center;
+        gap: 18px;
+        padding-bottom: 18dvh;
+        box-sizing: border-box;
+    }
+
+    #selection-stage.stage-5 .card {
+        height: 23dvh;
+        width: calc(23dvh / 1.93);
+    }
+
+    .container-botoes {
+        position: fixed;
+        bottom: 4dvh;
+        width: 100%;
+        height: auto;
+        z-index: 60;
+        pointer-events: auto;
+        margin: 0;
+        padding: 0;
+    }
+
+    .botao-texto-grande {
+        font-size: 1.2rem;
+        padding: 12px 30px;
+        background-color: #201433;
+        border: 1px solid #7D6B2E;
+    }
+
+    /* RESULTS PAGE */
+    .insideResult {
+        width: 95%;
+        height: 95%;
+        padding-top: 2dvh;
+        margin: 0 auto;
+    }
+
+    .txt-resultado {
+        padding: 10px 15px 0;
+        font-size: 1.2rem;
+    }
+
+    .insideResult .container-botoes {
+        position: static;
+        margin-top: 20px;
+        padding-bottom: 40px;
+        width: 100%;
+        height: auto;
+        transform: none;
+    }
+
+    .content-wrapper {
+        overflow-y: scroll;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .content-wrapper::-webkit-scrollbar {
+        width: 6px;
+        display: block;
+    }
+
+    .content-wrapper::-webkit-scrollbar-track {
+        background: rgba(32, 20, 51, 0.3);
+    }
+
+    .content-wrapper::-webkit-scrollbar-thumb {
+        background-color: #7D6B2E;
+        border-radius: 10px;
+    }
+
+    /* Chat focus mode — same pattern as small phone, slightly more generous heights. */
+    .chat-interface.chat-focus-mode {
+        top: 5dvh;
+        transform: translate(-50%, 0);
+        height: auto;
+        max-height: 40dvh;
+        border-radius: 10px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.9);
+    }
+
+    .chat-interface.chat-focus-mode .chat-header {
+        display: none;
+    }
+
+    .chat-interface.chat-focus-mode .chat-messages {
+        flex-grow: 0;
+        height: 120px;
+        padding: 10px;
+        background-color: rgba(0, 0, 0, 0.3);
+    }
+
+    .chat-interface.chat-focus-mode .chat-input-area {
+        padding: 8px 12px;
+        min-height: 50px;
+    }
+
+    .chat-interface.chat-focus-mode .chat-input,
+    .chat-interface.chat-focus-mode .chat-send-button {
+        height: 35px;
+        font-size: 14px;
+    }
+}
+
+/* -------- Large phones / small tablets (541–768px portrait) -------- */
+@media (min-width: 541px) and (max-width: 768px) and (orientation: portrait) {
+
+    html,
+    body {
+        height: 100dvh;
+        overflow: hidden !important;
+    }
+
+    .decorCantos {
+        background-size: 90%;
+        width: 20vw;
+        height: 20vw;
+    }
+
+    .top-left {
+        top: 7vw;
+        left: 3vw;
+        transform: scaleX(-1);
+    }
+
+    .bottom-left {
+        bottom: 3vw;
+        left: 3vw;
+        transform: scale(-1, -1);
+    }
+
+    .top-right {
+        top: 7vw;
+        right: 3vw;
+    }
+
+    .bottom-right {
+        bottom: 3vw;
+        right: 3vw;
+        transform: scaleY(-1);
+    }
+
+    .decorCentroAnimate {
+        width: 135vw;
+    }
+
+    .navbar {
+        height: 7dvh;
+    }
+
+    .navbar .logo {
+        font-size: calc(0.60 * 7dvh);
+    }
+
+    .container {
+        top: 7dvh;
+        height: 90dvh;
+        width: 80%;
+    }
+
+    .insideIndex {
+        padding-top: 4dvh;
+    }
+
+    .text-group .texto-destacado {
+        margin-bottom: 1dvh;
+        padding: 0 3dvh;
+    }
+
+    .text-group .txt-parafrafo {
+        margin-bottom: 1dvh;
+        padding: 0 1dvh;
+    }
+
+    .texto-destacado {
+        font-size: 1.7rem;
+        line-height: 1.1;
+    }
+
+    .txt-parafrafo {
+        font-size: 1.2rem;
+        width: 100%;
+    }
+
+    .options-container {
+        font-size: 1.3rem;
+        margin-bottom: 8px;
+    }
+
+    .options-container p {
+        font-size: 1.4rem;
+        margin-top: 4dvh;
+        width: 90%;
+    }
+
+    textarea {
+        width: 80%;
+        min-height: 60px;
+        padding: 15px;
+        font-size: 1.1rem;
+        margin-bottom: 3dvh;
+    }
+
+    textarea::placeholder {
+        font-size: 1rem;
+    }
+
+    .botao-personalizado {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        font-size: 32px;
+        margin: 0 15px;
+    }
+
+    .container-botoes {
+        padding-top: 3dvh;
+        padding-bottom: 5dvh;
+    }
+
+    .botao-texto-grande {
+        height: 40px;
+        padding: 18px 28px;
+        font-size: 28px;
+    }
+
+    /* Card grid — 4 columns, 6 rows with slightly more generous padding for the wider screen. */
+    .insideCards {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(6, 1fr);
+        align-content: center;
+        justify-items: center;
+        height: 100dvh;
+        width: 100%;
+        padding: 8dvh 5dvw 15dvh 5dvw;
+        box-sizing: border-box;
+        gap: 10px;
+    }
+
+    .insideCards>.flex-container:not(#selection-stage) {
+        display: contents;
+    }
+
+    .insideCards>.flex-container:nth-of-type(3) .card:nth-child(6) {
+        grid-column-start: 2;
+    }
+
+    .card {
+        height: 90%;
+        width: auto;
+        aspect-ratio: 1 / 1.93;
+        border-radius: 6px;
+        margin: 0;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    #selection-stage {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100dvh;
+        background-color: transparent;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    #selection-stage .card {
+        pointer-events: auto;
+        height: auto;
+        margin-bottom: 0;
+        box-shadow: 0 0 25px rgba(233, 219, 174, 0.3);
+    }
+
+    #selection-stage.stage-1 {
+        padding-bottom: 18dvh;
+    }
+
+    #selection-stage.stage-1 .card {
+        height: 50dvh;
+        width: calc(50dvh / 1.93);
+    }
+
+    #selection-stage.stage-3 {
+        flex-direction: column;
+        gap: 25px;
+        padding-bottom: 18dvh;
+    }
+
+    #selection-stage.stage-3 .card {
+        height: 22dvh;
+        width: calc(22dvh / 1.93);
+        margin: 0;
+    }
+
+    #selection-stage.stage-5 {
+        flex-wrap: wrap;
+        align-content: center;
+        justify-content: center;
+        gap: 18px;
+        padding-bottom: 18dvh;
+    }
+
+    #selection-stage.stage-5 .card {
+        height: 20dvh;
+        width: calc(20dvh / 1.93);
+        aspect-ratio: 1 / 1.93;
+    }
+
+    .insideCards .container-botoes {
+        position: fixed;
+        bottom: 5dvh;
+        width: 100%;
+        height: auto;
+        z-index: 60;
+        pointer-events: auto;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* RESULTS PAGE */
+    .insideResult {
+        width: 90%;
+        height: 95%;
+        padding-top: 2dvh;
+        margin: 0 auto;
+    }
+
+    .txt-resultado {
+        padding: 20px 30px 0;
+        font-size: 1.4rem;
+    }
+
+    .insideResult .container-botoes {
+        position: static;
+        margin-top: 30px;
+        padding-bottom: 50px;
+    }
+
+    .content-wrapper {
+        overflow-y: scroll;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .content-wrapper::-webkit-scrollbar {
+        width: 8px;
+        display: block;
+    }
+
+    .content-wrapper::-webkit-scrollbar-track {
+        background: rgba(32, 20, 51, 0.3);
+    }
+
+    .content-wrapper::-webkit-scrollbar-thumb {
+        background-color: #7D6B2E;
+        border-radius: 10px;
+    }
+
+    .chat-interface.chat-focus-mode {
+        top: 5dvh;
+        transform: translate(-50%, 0);
+        height: auto;
+        max-height: 45dvh;
+        border-radius: 12px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.9);
+    }
+
+    .chat-interface.chat-focus-mode .chat-header {
+        display: none;
+    }
+
+    .chat-interface.chat-focus-mode .chat-messages {
+        flex-grow: 0;
+        height: 150px;
+        padding: 15px;
+        background-color: rgba(0, 0, 0, 0.3);
+    }
+
+    .chat-interface.chat-focus-mode .chat-input-area {
+        padding: 10px 15px;
+        min-height: 60px;
+    }
+
+    .chat-interface.chat-focus-mode .chat-input,
+    .chat-interface.chat-focus-mode .chat-send-button {
+        height: 40px;
+        font-size: 16px;
+    }
+}
+
+/* -------- Tablets (769–1081px portrait) -------- */
+@media (min-width: 769px) and (max-width: 1081px) and (orientation: portrait) {
+
+    .decorCantos {
+        background-size: 90%;
+        width: 25vw;
+        height: 25vw;
+    }
+
+    .top-left {
+        top: 11vw;
+        left: 3vw;
+        transform: scaleX(-1);
+    }
+
+    .bottom-left {
+        bottom: 3vw;
+        left: 3vw;
+        transform: scale(-1, -1);
+    }
+
+    .top-right {
+        top: 11vw;
+        right: 3vw;
+    }
+
+    .bottom-right {
+        bottom: 3vw;
+        right: 3vw;
+        transform: scaleY(-1);
+    }
+
+    .decorCentroAnimate {
+        width: 160vw;
+    }
+
+    .navbar {
+        height: 8dvh;
+    }
+
+    .navbar .logo {
+        font-size: calc(0.60 * 8dvh);
+    }
+
+    .container {
+        top: 6dvh;
+        height: 90dvh;
+        width: 75%;
+    }
+
+    .insideIndex {
+        padding-top: 5dvh;
+    }
+
+    .text-group .texto-destacado {
+        margin-bottom: 2dvh;
+        padding: 0 3dvh;
+    }
+
+    .text-group .txt-parafrafo {
+        margin-bottom: 1dvh;
+        font-size: 2rem;
+        padding: 0 1dvh;
+    }
+
+    .options-container {
+        font-size: 2rem;
+        margin-bottom: 8px;
+    }
+
+    .options-container p {
+        font-size: 2rem;
+        margin-top: 4dvh;
+        width: 100%;
+    }
+
+    .texto-destacado {
+        font-size: 2.5rem;
+        line-height: 1;
+    }
+
+    .txt-parafrafo {
+        font-size: 1.2rem;
+        width: 100%;
+    }
+
+    textarea {
+        width: 85%;
+        height: 6dvh;
+        min-height: 50px;
+        padding: 15px;
+        font-size: 1.2rem;
+        margin-bottom: 4dvh;
+    }
+
+    textarea::placeholder {
+        font-size: 1.2rem;
+    }
+
+    .botao-personalizado {
+        width: 55px;
+        height: 55px;
+        border-radius: 15px;
+        font-size: 32px;
+        margin: 0 15px;
+    }
+
+    .container-botoes {
+        padding-top: 3dvh;
+        padding-bottom: 5dvh;
+    }
+
+    .botao-texto-grande {
+        height: 50px;
+        padding: 18px 28px;
+        font-size: 32px;
+    }
+
+    html,
+    body {
+        height: 100dvh;
+        overflow: hidden !important;
+    }
+
+    /* Card grid — same 4×6 logic, larger gaps for the bigger screen. */
+    .insideCards {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(6, 1fr);
+        align-content: center;
+        justify-items: center;
+        height: 100dvh;
+        width: 100%;
+        padding: 10dvh 5dvw 15dvh 5dvw;
+        box-sizing: border-box;
+        gap: 15px;
+    }
+
+    .insideCards>.flex-container:not(#selection-stage) {
+        display: contents;
+    }
+
+    .insideCards>.flex-container:nth-of-type(3) .card:nth-child(6) {
+        grid-column-start: 2;
+    }
+
+    .card {
+        height: 90%;
+        width: auto;
+        aspect-ratio: 1 / 1.93;
+        border-radius: 8px;
+        margin: 0;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    #selection-stage {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100dvh;
+        background-color: transparent;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    #selection-stage .card {
+        pointer-events: auto;
+        height: auto;
+        margin-bottom: 0;
+        box-shadow: 0 0 30px rgba(233, 219, 174, 0.3);
+    }
+
+    #selection-stage.stage-1 {
+        padding-bottom: 18dvh;
+    }
+
+    #selection-stage.stage-1 .card {
+        height: 55dvh;
+        width: calc(55dvh / 1.93);
+    }
+
+    #selection-stage.stage-3 {
+        flex-direction: column;
+        gap: 30px;
+        padding-bottom: 18dvh;
+    }
+
+    #selection-stage.stage-3 .card {
+        height: 24dvh;
+        width: calc(24dvh / 1.93);
+        margin: 0;
+    }
+
+    #selection-stage.stage-5 {
+        flex-wrap: wrap;
+        align-content: center;
+        justify-content: center;
+        gap: 20px;
+        padding-bottom: 18dvh;
+    }
+
+    #selection-stage.stage-5 .card {
+        height: 23dvh;
+        width: calc(23dvh / 1.93);
+    }
+
+    .insideCards .container-botoes {
+        position: fixed;
+        bottom: 5dvh;
+        width: 100%;
+        height: auto;
+        z-index: 60;
+        pointer-events: auto;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* RESULTS PAGE */
+    .insideResult {
+        width: 85%;
+        height: 95%;
+        padding-top: 3dvh;
+        margin: 0 auto;
+    }
+
+    .txt-resultado {
+        padding: 20px 40px 0;
+        font-size: 1.6rem;
+        line-height: 1.4;
+    }
+
+    .insideResult .container-botoes {
+        position: static;
+        margin-top: 40px;
+        padding-bottom: 60px;
+    }
+
+    .content-wrapper {
+        overflow-y: scroll;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .content-wrapper::-webkit-scrollbar {
+        width: 10px;
+        display: block;
+    }
+
+    .content-wrapper::-webkit-scrollbar-track {
+        background: rgba(32, 20, 51, 0.3);
+    }
+
+    .content-wrapper::-webkit-scrollbar-thumb {
+        background-color: #7D6B2E;
+        border-radius: 10px;
+    }
+
+    .chat-interface.chat-focus-mode {
+        top: 8dvh;
+        width: 80%;
+        max-width: 600px;
+        left: 50%;
+        transform: translate(-50%, 0);
+        height: auto;
+        max-height: 50dvh;
+        border-radius: 15px;
+        box-shadow: 0 4px 40px rgba(0, 0, 0, 0.9);
+    }
+
+    .chat-interface.chat-focus-mode .chat-header {
+        display: none;
+    }
+
+    .chat-interface.chat-focus-mode .chat-messages {
+        flex-grow: 0;
+        height: 200px;
+        padding: 20px;
+        background-color: rgba(0, 0, 0, 0.3);
+    }
+
+    .chat-interface.chat-focus-mode .chat-input-area {
+        padding: 15px 20px;
+        min-height: 70px;
+    }
+
+    .chat-interface.chat-focus-mode .chat-input,
+    .chat-interface.chat-focus-mode .chat-send-button {
+        height: 45px;
+        font-size: 18px;
+    }
+}
+
+
+/* ================================================ */
+/* 16. KEYBOARD FOCUS MODE (mobile soft keyboard)   */
+/* ================================================ */
+
+/*
+    On small screens (≤ 1080px), when the user taps the intention textarea,
+    the browser's soft keyboard takes up roughly half the viewport.
+    JavaScript adds 'keyboard-active' to <body> on textarea focus and
+    removes it on blur. These rules collapse the layout so only the
+    textarea is visible — maximising the available space for typing.
+*/
+
+@media (max-width: 1080px) {
+
+    /* Hide the navbar so the textarea can move toward the top. */
+    body.keyboard-active .navbar {
+        display: none;
+    }
+
+    /* Fade the corner decorations rather than removing them to avoid a layout jump. */
+    body.keyboard-active .container4cantos {
+        opacity: 0.2;
+    }
+
+    /* Remove the headline and paragraph — only the textarea needs to be visible while typing. */
+    body.keyboard-active .text-group .texto-destacado,
+    body.keyboard-active .text-group .txt-parafrafo {
+        display: none;
+    }
+
+    /* Hide the card-count options and submit button below the fold. */
+    body.keyboard-active .options-container,
+    body.keyboard-active .insideIndex>div:last-child {
+        display: none;
+    }
+
+    /* Vertically centre the textarea in the remaining space above the keyboard. */
+    body.keyboard-active .insideIndex {
+        justify-content: center;
+        padding-top: 0;
+    }
+
+    body.keyboard-active .container {
+        height: 100dvh;
+        top: 0;
+    }
+
+    /* Slight scale-up reinforces that the textarea is now the primary focus. */
+    body.keyboard-active textarea {
+        transform: scale(1.05);
+        transition: transform 0.3s ease;
+    }
+}
+
+
+/* ================================================ */
+/* 17. LANDSCAPE ROTATION BLOCKER                   */
+/* ================================================ */
+
+/*
+    The app is designed for portrait orientation on touch devices.
+    In landscape, the card grid and reading layout break down.
+    We detect landscape + touch (pointer: coarse) and show a full-screen
+    prompt asking the user to rotate their device, hiding the app behind it.
+
+    pointer: coarse targets finger input (touch screens).
+    Mice are pointer: fine, so this never triggers on desktop browsers
+    even if the window is narrower than it is tall.
+*/
+
+#rotate-message {
+    display: none;
+}
+
+/* Hidden by default on all non-landscape-touch contexts. */
+
+@media only screen and (orientation: landscape) and (pointer: coarse) {
+
+    #rotate-message {
+        display: flex;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100dvh;
+        background-color: #201433;
+        background-image: url(/static/img/texture.jpg);
+        z-index: 99999;
+        /* Must sit above every other layer, including the chat panel. */
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .rotate-content {
+        color: #E9DBAE;
+        font-family: 'Averia Serif Libre', serif;
+        padding: 20px;
+        max-width: 80%;
+    }
+
+    .rotate-content h2 {
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+        color: #7D6B2E;
+    }
+
+    .rotate-content p {
+        font-size: 1rem;
+        line-height: 1.4;
+    }
+
+    /* Phone icon animates to demonstrate the desired rotation direction. */
+    .rotate-icon {
+        font-size: 60px;
+        color: #E9DBAE;
+        margin-bottom: 20px;
+        display: inline-block;
+        animation: rotate-phone 2s infinite ease-in-out;
+    }
+
+    /* Hide the actual app to prevent rendering glitches visible behind the overlay. */
+    .container,
+    .navbar,
+    .decorCentro,
+    .container4cantos,
+    .insideIndex,
+    .insideCards {
+        display: none !important;
+    }
+}
+
+@keyframes rotate-phone {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    50% {
+        transform: rotate(-90deg);
+    }
+
+    /* Snaps to portrait position. */
+    100% {
+        transform: rotate(-90deg);
+    }
+}
+
+
+/* ================================================ */
+/* 18. DESKTOP LANDSCAPE (1024–1920px landscape)    */
+/* ================================================ */
+
+@media (min-width: 1024px) and (max-width: 1920px) and (orientation: landscape) {
+
+    html,
+    body {
+        height: 100dvh;
+        overflow: hidden !important;
+    }
+
+    .decorCantos {
+        background-size: 60%;
+        width: 15vw;
+        height: 15vw;
+    }
+
+    .top-left {
+        top: 0;
+        left: 0;
+        transform: scaleX(-1);
+    }
+
+    .bottom-left {
+        bottom: 0;
+        left: 0;
+        transform: scale(-1, -1);
+    }
+
+    .top-right {
+        top: 0;
+        right: 0;
+    }
+
+    .bottom-right {
+        bottom: 0;
+        right: 0;
+        transform: scaleY(-1);
+    }
+
+    /* Constrain the rotating background by height on landscape to prevent it
+       becoming enormous on wide monitors. */
+    .decorCentroAnimate {
+        width: 150vh;
+        height: 150vh;
+    }
+
+    .navbar {
+        height: 8dvh;
+    }
+
+    .navbar .logo {
+        font-size: calc(0.50 * 8dvh);
+    }
+
+    .container {
+        top: 2dvh;
+        height: 92dvh;
+        width: 90%;
+        max-width: 1400px;
+    }
+
+    /* INDEX PAGE */
+    .insideIndex {
+        max-width: 900px;
+        padding-top: 5dvh;
+        padding-bottom: 5dvh;
+    }
+
+    .text-group .texto-destacado {
+        margin-bottom: 1dvh;
+    }
+
+    .text-group .txt-parafrafo {
+        margin-bottom: 1dvh;
+    }
+
+    .texto-destacado {
+        font-size: 1.7rem;
+        line-height: 1.2;
+    }
+
+    .txt-parafrafo {
+        font-size: 1.3rem;
+        width: 80%;
+    }
+
+    .options-container {
+        font-size: 1.3rem;
+        margin-bottom: 15px;
+    }
+
+    .options-container p {
+        margin-top: 2dvh;
+    }
+
+    .botao-personalizado {
+        width: 50px;
+        height: 50px;
+        border-radius: 15px;
+        font-size: 36px;
+        margin: 0 20px;
+    }
+
+    .container-botoes {
+        margin-top: 10px;
+        padding-bottom: 0;
+    }
+
+    .botao-texto-grande {
+        height: 40px;
+        padding: 15px 40px;
+        font-size: 23px;
+    }
+
+    textarea {
+        width: 70%;
+        min-height: 80px;
+        padding: 20px;
+        font-size: 1.2rem;
+        margin-bottom: 3dvh;
+    }
+
+    /*
+        DESKTOP CARD LAYOUT
+        We switch back to Flexbox with three horizontal rows of cards.
+        The Grid layout used on mobile isn't needed here — the screen
+        is wide enough to show all cards in their natural row groupings.
+    */
+    .insideCards {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100dvh;
+        width: 100%;
+        padding: 8dvh 0 5dvh 0;
+        box-sizing: border-box;
+        gap: 2dvh;
+        /* Vertical gap between the three card rows. */
+    }
+
+    /* Restore the row wrappers (we do NOT use display: contents on desktop). */
+    .insideCards>.flex-container:not(#selection-stage) {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        width: 100%;
+        flex-grow: 0;
+    }
+
+    /*
+        Cards are sized by height (22dvh) so all three rows always fit
+        regardless of monitor height. Width is auto-calculated from the aspect ratio.
+    */
+    .card {
+        height: 22dvh;
+        width: auto;
+        aspect-ratio: 1 / 1.93;
+        margin: 0 8px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    #selection-stage {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100dvh;
+        background-color: transparent;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    #selection-stage .card {
+        pointer-events: auto;
+        height: auto;
+        margin-bottom: 0;
+        box-shadow: 0 0 40px rgba(233, 219, 174, 0.3);
+    }
+
+    /* 1 card: fills most of the screen height. */
+    #selection-stage.stage-1 {
+        padding-bottom: 10dvh;
+    }
+
+    #selection-stage.stage-1 .card {
+        height: 55dvh;
+        width: calc(55dvh / 1.93);
+    }
+
+    /* 3 cards: horizontal row now that there's enough width. */
+    #selection-stage.stage-3 {
+        flex-direction: row;
+        gap: 60px;
+        padding-bottom: 10dvh;
+    }
+
+    #selection-stage.stage-3 .card {
+        height: 45dvh;
+        width: calc(45dvh / 1.93);
+        margin: 0;
+    }
+
+    /* 5 cards: single horizontal row — desktop width comfortably fits all five. */
+    #selection-stage.stage-5 {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 30px;
+        padding-bottom: 10dvh;
+    }
+
+    #selection-stage.stage-5 .card {
+        height: 35dvh;
+        width: calc(35dvh / 1.93);
+    }
+
+    .insideCards .container-botoes {
+        position: fixed;
+        bottom: 5dvh;
+        width: 100%;
+        height: auto;
+        z-index: 60;
+        pointer-events: auto;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* RESULTS PAGE — narrower reading column for comfort on wide screens. */
+    .insideResult {
+        width: 70%;
+        max-width: 900px;
+        height: 90%;
+        padding-top: 5dvh;
+        margin: 0 auto;
+    }
+
+    .txt-resultado {
+        padding: 20px 50px 0;
+        font-size: 1.5rem;
+        line-height: 1.5;
+    }
+
+    .insideResult .container-botoes {
+        position: static;
+        margin-top: 40px;
+        padding-bottom: 60px;
+    }
+
+    .content-wrapper {
+        overflow-y: scroll;
+    }
+
+    .content-wrapper::-webkit-scrollbar {
+        width: 12px;
+    }
+
+    .content-wrapper::-webkit-scrollbar-track {
+        background: rgba(32, 20, 51, 0.3);
+    }
+
+    .content-wrapper::-webkit-scrollbar-thumb {
+        background-color: #7D6B2E;
+        border-radius: 10px;
+        border: 2px solid #201433;
+    }
+
+    /* Chat panel — fixed pixel dimensions on desktop since viewport is predictable. */
+    .chat-interface {
+        width: 500px;
+        height: 600px;
+        border-radius: 15px;
+    }
+
+    /* Focus mode on touch laptops (Surface, iPad Pro in landscape). */
+    .chat-interface.chat-focus-mode {
+        top: 10dvh;
+        width: 600px;
+        left: 50%;
+        transform: translate(-50%, 0);
+        height: auto;
+        max-height: 60dvh;
+    }
+}

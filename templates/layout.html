@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<!--
+    layout.html — Base Template (CS50 Final Project)
+
+    Every page in this app extends this template using Jinja2's template
+    inheritance system. Child templates (index.html, cartas.html, results.html)
+    fill in the {% block content %} section below, while everything else —
+    the navbar, decorative elements, fonts, and dev tooling — is defined once here.
+-->
+<html lang="pt">
+<head>
+    <meta charset="utf-8">
+    <!-- Ensures the page scales correctly on mobile devices instead of
+         zooming out to fit a desktop-sized layout. -->
+    <meta name="viewport" content="initial-scale=1, width=device-width">
+
+    <!-- Favicon: url_for() generates the correct path regardless of where
+         Flask is mounted, avoiding hardcoded "/static/..." paths. -->
+    <link href="{{ url_for('static', filename='favicon.ico') }}" rel="icon">
+
+    <!-- Main stylesheet for the app -->
+    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+
+    <!-- Google Fonts — preconnect hints tell the browser to open a TCP
+         connection to Google's font servers early, reducing load time. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Averia Libre & Averia Serif Libre: decorative serif fonts used for
+         headings and the mystical/tarot aesthetic of the UI. -->
+    <link href="https://fonts.googleapis.com/css2?family=Averia+Libre:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Averia+Serif+Libre:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Mate: a classic italic-friendly serif used for body text and readings. -->
+    <link href="https://fonts.googleapis.com/css2?family=Mate:ital@0;1&display=swap" rel="stylesheet">
+
+    <title>ArcanaFutura</title>
+</head>
+<body>
+
+    <!--
+        ROTATE MESSAGE OVERLAY
+        Shown via CSS/JS when the user is on a mobile device in landscape mode.
+        The tarot card layout is designed for portrait orientation, so we nudge
+        users to rotate rather than letting the UI break.
+    -->
+    <div id="rotate-message">
+        <div class="rotate-content">
+            <div class="rotate-icon">⟳</div>
+            <h2>Por favor, gire seu dispositivo</h2>
+            <p>Para a melhor experiência com o Tarot, utilize a tela na vertical.</p>
+        </div>
+    </div>
+
+    <!--
+        CORNER DECORATIONS
+        Four purely decorative elements positioned at the page corners via CSS.
+        They create a vintage/ornamental frame around the whole page, reinforcing
+        the tarot card aesthetic. The actual styling lives in styles.css.
+    -->
+    <div class="container4cantos">
+        <div class="decorCantos top-left"></div>
+        <div class="decorCantos top-right"></div>
+        <div class="decorCantos bottom-left"></div>
+        <div class="decorCantos bottom-right"></div>
+    </div>
+
+    <!--
+        CENTER BACKGROUND DECORATION
+        A rotating background image (rota.png) that sits behind the main content.
+        The "decorCentroAnimate" class applies a CSS keyframe rotation animation,
+        giving the page a subtle, mystical spinning-wheel effect.
+    -->
+    <div class="decorCentro">
+        <img src="/static/img/rota.png" class="decorCentroAnimate">
+    </div>
+
+    <!-- Navigation bar — currently only displays the app logo/brand name. -->
+    <nav class="navbar">
+        <div class="logo">ArcanaFutura</div>
+    </nav>
+
+    <!--
+        MAIN CONTENT BLOCK
+        This is the Jinja2 template inheritance hook. Child templates override
+        {% block content %} to inject their own page-specific HTML here,
+        while still inheriting everything above and below in this file.
+    -->
+    <div class="container">
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <!--
+        BROWSERSYNC INJECTION (Development Only)
+        BrowserSync is a dev tool that auto-reloads the browser when source files
+        change. It normally injects its client script automatically when you access
+        the app on port 3000, but when using Responsively App or other viewport
+        tools that proxy the Flask server directly, it never gets injected.
+
+        This block does the injection manually, but ONLY when:
+          1. We're on localhost or 127.0.0.1 (i.e., not in production on Render)
+          2. We're NOT already on port 3000 (where BrowserSync injects itself,
+             to avoid loading the script twice)
+
+        The Jinja2 condition is evaluated server-side, so this block is
+        completely absent from the HTML sent to production users.
+    -->
+    {% if ('localhost' in request.host or '127.0.0.1' in request.host) and ':3000' not in request.host %}
+    <script id="__bs_script__">//<![CDATA[
+        document.write("<script async src='http://HOST:3000/browser-sync/browser-sync-client.js?v=2.29.3'><\/script>".replace("HOST", location.hostname));
+    //]]></script>
+    {% endif %}
+
+</body>
+</html>
