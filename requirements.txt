@@ -59,7 +59,7 @@ Jinja2==3.1.4
 jinja2_markdown==0.0.3
 kombu==5.4.2
 limits==3.13.0
-Markdown==3.7
+Markdown==3.8.1
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
 mdurl==0.1.2
