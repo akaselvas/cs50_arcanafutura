@@ -91,28 +91,5 @@
         {% endblock %}
     </div>
 
-    <!--
-        BROWSERSYNC INJECTION (Development Only)
-        BrowserSync is a dev tool that auto-reloads the browser when source files
-        change. It normally injects its client script automatically when you access
-        the app on port 3000, but when using Responsively App or other viewport
-        tools that proxy the Flask server directly, it never gets injected.
-
-        This block does the injection manually, but ONLY when:
-          1. We're on localhost or 127.0.0.1 (i.e., not in production on Render)
-          2. We're NOT already on port 3000 (where BrowserSync injects itself,
-             to avoid loading the script twice)
-
-        The Jinja2 condition is evaluated server-side, so this block is
-        completely absent from the HTML sent to production users.
-    
-    {# {% if ('localhost' in request.host or '127.0.0.1' in request.host) and ':3000' not in request.host %}
-    <script id="__bs_script__">//<![CDATA[
-        document.write("<script async src='http://HOST:3000/browser-sync/browser-sync-client.js?v=2.29.3'><\/script>".replace("HOST", location.hostname));
-    //]]></script>
-    {% endif %} #}
-
-    -->
-
 </body>
 </html>
