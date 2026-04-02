@@ -1,0 +1,6 @@
+repos:
+-   repo: https://github.com/PyCQA/bandit
+    rev: 1.9.4
+    hooks:
+    -   id: bandit
+        args: ["-lll"]  # This tells Bandit to only report "High" severity issues

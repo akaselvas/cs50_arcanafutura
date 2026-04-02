@@ -528,4 +528,8 @@ if __name__ == "__main__":
     # Run with SocketIO instead of Flask's built-in server to support WebSockets.
     # host='0.0.0.0' makes the server accessible from other devices on the network
     # (useful for testing on a phone during development).
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    # socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+
+    # Host '0.0.0.0' allows access from external IPs (e.g., phone testing).
+    # Debug is only enabled when NOT in production.
+    socketio.run(app, debug=not is_production, host='0.0.0.0', port=5000) # nosec
