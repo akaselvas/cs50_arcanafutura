@@ -165,20 +165,36 @@
         // ----------------------------------------------------------------
         botoes.forEach(botao => {
             botao.addEventListener('click', () => {
+                // Check if the button the user just clicked is ALREADY active
+                const isAlreadyActive = botao.classList.contains('active');
 
-                // Reset all buttons to their inactive state first.
+                // First, reset ALL buttons to their default, unselected state
                 botoes.forEach(b => {
                     b.classList.remove('active');
-                    b.style.opacity = '0.5';
-                    b.disabled = true;
+                    b.style.opacity = '1'; // Restore full visibility
+                    b.disabled = false;    // NEVER disable them, so the user can change their mind
                 });
 
-                // Mark the clicked button as selected.
-                botao.classList.add('active');
-                botao.style.opacity = '1';
-
-                // Write the card count value into the hidden form field.
-                selectedCardsInput.value = botao.dataset.value;
+                if (isAlreadyActive) {
+                    // TOGGLE OFF: The user clicked the currently selected button.
+                    // We leave all buttons in the reset state and clear the hidden input.
+                    selectedCardsInput.value = "";
+                } else {
+                    // SELECT NEW: The user clicked a different button.
+                    // Dim the other buttons, but keep them clickable.
+                    botoes.forEach(b => {
+                        if (b !== botao) {
+                            b.style.opacity = '0.5';
+                        }
+                    });
+                    
+                    // Highlight the clicked button
+                    botao.classList.add('active');
+                    botao.style.opacity = '1';
+                    
+                    // Update the hidden input with the new value
+                    selectedCardsInput.value = botao.dataset.value;
+                }
             });
         });
 
