@@ -169,14 +169,14 @@ Talisman(app, content_security_policy=csp)
 # --- Input Sanitization ---
 def sanitize_input(text: str) -> str:
     """
-    Strips potentially dangerous HTML from user-provided text using the bleach library.
-    Only a safe whitelist of HTML tags and attributes is allowed through.
-    This prevents stored XSS attacks where a user submits malicious scripts.
+    Strips ALL HTML tags from user-provided text using the bleach library.
+    This ensures the intention is stored as plain text only, preventing 
+    XSS attacks and removing unnecessary formatting.
     """
-    allowed_tags = ['a', 'b', 'i', 'em', 'strong', 'p', 'br', 'ul', 'li', 'ol',
-                    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre', 'code']
-    allowed_attributes = {'a': ['href', 'rel'], 'img': ['src', 'alt']}
-    cleaned_text = bleach.clean(text, tags=allowed_tags, attributes=allowed_attributes, strip=True)
+    # allowed_tags = ['a', 'b', 'i', 'em', 'strong', 'p', 'br', 'ul', 'li', 'ol',
+                    # 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre', 'code']
+    # allowed_attributes = {'a': ['href', 'rel']}
+    cleaned_text = bleach.clean(text, tags=[], attributes={}, strip=True)
     return cleaned_text
 
 

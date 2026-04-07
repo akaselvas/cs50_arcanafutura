@@ -154,7 +154,7 @@
     // JS payload at render time — no extra HTTP request needed.
     // ----------------------------------------------------------------
     socket.emit('start_generation', {
-        intencao:      "{{ intencao }}",
+        intencao:      {{ intencao | tojson }},
         selected_cards: "{{ selected_cards }}",
         choosed_cards:  {{ choosed_cards | tojson }}, // tojson filter safely serializes a Python list to a JS array
         csrf_token:     csrfToken
