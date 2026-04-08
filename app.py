@@ -324,6 +324,8 @@ def process_form():
     intencao = sanitize_input(request.form.get('intencao', '').strip())
     selected_cards = request.form.get('selectedCards')
 
+    logging.info(f"QA DEBUG: selected_cards value is '{selected_cards}' and type is {type(selected_cards)}")
+
     # Validate the card count against the allowed options to prevent manipulation.
     if not selected_cards or selected_cards not in ['1', '3', '5']:
         return jsonify({'error': 'Invalid card selection'}), 400
