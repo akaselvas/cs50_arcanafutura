@@ -105,7 +105,10 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 # Redis is used for two purposes: storing server-side sessions and tracking rate limit counters.
 redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379')
 app.config['SESSION_REDIS'] = redis.from_url(redis_url)
-redis_client = redis.Redis.from_url(redis_url)
+# Create a connection pool to manage and reuse connections
+pool = redis.ConnectionPool.from_url(redis_url, max_connections=10) # Limit to 10
+redis_client = redis.Redis(connection_pool=pool)
+# redis_client = redis.Redis.from_url(redis_url)
 
 # --- Security Extensions ---
 
