@@ -102,35 +102,50 @@ app.config.update(
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 # --- Redis Setup ---
-# Redis is used for two purposes: storing server-side sessions and tracking rate limit counters.
-redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379')
+# # Redis is used for two purposes: storing server-side sessions and tracking rate limit counters.
+# redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379')
 # app.config['SESSION_REDIS'] = redis.from_url(redis_url)
-# # Create a connection pool to manage and reuse connections
 # redis_client = redis.Redis.from_url(redis_url)
 
-# Create a connection pool to manage and reuse connections
-pool = redis.ConnectionPool.from_url(redis_url, max_connections=10) # Limit to 10
-redis_client = redis.Redis(connection_pool=pool)
+# # --- Security Extensions ---
 
-# Update Flask-Session to use this pool
+# # CSRF protection: Flask-WTF automatically generates and validates hidden tokens
+# # in forms, preventing Cross-Site Request Forgery attacks.
+# csrf = CSRFProtect(app)
+
+# # Server-side session storage backed by Redis.
+# Session(app)
+
+# # Rate limiter: restricts how many requests a single IP can make.
+# # Uses Redis to persist counters across requests (and server restarts).
+# limiter = Limiter(
+#     get_remote_address,
+#     app=app,
+#     storage_uri=redis_url,
+#     storage_options={"socket_connect_timeout": 30},
+#     strategy="fixed-window",
+#     default_limits=["400 per day", "100 per hour"]
+# )
+
+# --- Redis Setup V2 with limiter---
+redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379')
+
+# 1. Create a connection pool for Flask-Session (Max 10 connections)
+pool = redis.ConnectionPool.from_url(redis_url, max_connections=10)
+redis_client = redis.Redis(connection_pool=pool)
 app.config['SESSION_REDIS'] = redis_client
 
 # --- Security Extensions ---
-
-# CSRF protection: Flask-WTF automatically generates and validates hidden tokens
-# in forms, preventing Cross-Site Request Forgery attacks.
 csrf = CSRFProtect(app)
-
-# Server-side session storage backed by Redis.
 Session(app)
 
-# Rate limiter: restricts how many requests a single IP can make.
-# Uses Redis to persist counters across requests (and server restarts).
+# 2. Configure Limiter to manage its own connections (Max 10 connections)
 limiter = Limiter(
     get_remote_address,
     app=app,
     storage_uri=redis_url,
-    storage_options={"connection_pool": pool}, # Use the pool here too!
+    # Pass max_connections as a setting, NOT the pool object!
+    storage_options={"socket_connect_timeout": 30, "max_connections": 10}, 
     strategy="fixed-window",
     default_limits=["400 per day", "100 per hour"]
 )
