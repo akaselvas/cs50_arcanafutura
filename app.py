@@ -104,11 +104,16 @@ app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 # --- Redis Setup ---
 # Redis is used for two purposes: storing server-side sessions and tracking rate limit counters.
 redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379')
-app.config['SESSION_REDIS'] = redis.from_url(redis_url)
+# app.config['SESSION_REDIS'] = redis.from_url(redis_url)
+# # Create a connection pool to manage and reuse connections
+# redis_client = redis.Redis.from_url(redis_url)
+
 # Create a connection pool to manage and reuse connections
 pool = redis.ConnectionPool.from_url(redis_url, max_connections=10) # Limit to 10
 redis_client = redis.Redis(connection_pool=pool)
-# redis_client = redis.Redis.from_url(redis_url)
+
+# Update Flask-Session to use this pool
+app.config['SESSION_REDIS'] = redis_client
 
 # --- Security Extensions ---
 
@@ -125,7 +130,7 @@ limiter = Limiter(
     get_remote_address,
     app=app,
     storage_uri=redis_url,
-    storage_options={"socket_connect_timeout": 30},
+    storage_options={"connection_pool": pool}, # Use the pool here too!
     strategy="fixed-window",
     default_limits=["400 per day", "100 per hour"]
 )
