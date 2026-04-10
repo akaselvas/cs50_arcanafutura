@@ -412,8 +412,9 @@ def results():
     Handles two scenarios for the results page:
 
     POST — The user has just submitted their chosen cards from /cartas.
-            The selected cards are parsed from form data, saved to the session
-            (so a page reload doesn't lose them), and the results template is rendered.
+            The selected cards are parsed from form data, validated for structure,
+            saved to the session (so a page reload doesn't lose them), and the
+            results template is rendered.
 
     GET  — The user reloaded the page or is using a multi-viewport dev tool.
             The saved session data is used to re-render the page without
@@ -431,8 +432,19 @@ def results():
         try:
             # The chosen cards arrive as a JSON string from a hidden form field.
             choosed_cards = json.loads(selected_cards_data) if selected_cards_data else []
-        except json.JSONDecodeError:
-            choosed_cards = []
+
+            # Validate root type
+            if not isinstance(choosed_cards, list):
+                raise ValueError("Payload root is not a list")
+
+            # Validate each card object has the required keys
+            if not all(isinstance(c, dict) and 'name' in c and 'value' in c for c in choosed_cards):
+                raise ValueError("One or more cards have an invalid structure")
+
+        except (json.JSONDecodeError, ValueError, TypeError) as e:
+            logging.warning(f"Card payload rejected: {e} | Raw payload: {selected_cards_data}")
+            flash('Dados inválidos. Por favor, selecione suas cartas novamente.', 'error')
+            return redirect(url_for('cartas'))
 
         # Persist the chosen cards in the session so a GET reload can recover them.
         session['choosed_cards'] = choosed_cards
@@ -451,7 +463,6 @@ def results():
 
         return render_template('results.html', intencao=intencao,
                                selected_cards=selected_cards, choosed_cards=choosed_cards)
-
 
 # =============================================================================
 # SOCKET.IO EVENT HANDLERS
