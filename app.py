@@ -247,7 +247,7 @@ api_key = os.getenv("GENAI_API_KEY")
 if not api_key:
     raise EnvironmentError("Missing GENAI_API_KEY environment variable.")
 
-genai.configure(api_key=api_key)
+genai.configure(api_key=api_key, transport='rest')
 
 # Generation config controls the AI's output style:
 # - temperature: creativity level (higher = more random)
@@ -486,10 +486,20 @@ def handle_generation(data):
     selected_cards = data.get('selected_cards', '')
     choosed_cards = data.get('choosed_cards', [])
 
-    reading_html = generate_tarot_reading(intencao, selected_cards, choosed_cards)
+    # 1. Get the user's specific connection ID
+    client_sid = request.sid 
 
+    # 2. Define the heavy AI work as a separate function
+    def background_generate():
+        reading_html = generate_tarot_reading(intencao, selected_cards, choosed_cards)
+        # Use socketio.emit and target the specific user with 'to=client_sid'
+        socketio.emit('generation_complete', {'reading': reading_html}, to=client_sid)
+
+    # 3. Tell SocketIO to run this in the background so the server doesn't freeze!
     print(f"CSRF Token: {csrf_token}")
-    emit('generation_complete', {'reading': reading_html})
+    socketio.start_background_task(background_generate)
+
+    # emit('generation_complete', {'reading': reading_html})
 
 
 @socketio.on('send_message')
@@ -504,18 +514,25 @@ def handle_message(data: Dict[str, str]):
     message = sanitize_input(data['message'])
     tarot_reading = data.get('tarot_reading', '')
 
-    try:
-        chat_prompt = (
-            f"Contexto: Uma leitura de tarô foi realizada com o seguinte resultado:\n\n"
-            f"{tarot_reading}\n\nIntencao do usuário {message}\n\n"
-            f"Por favor, forneça uma resposta com base neste contexto:"
-        )
-        response = model.generate_content(chat_prompt)
-        emit('receive_message', {'message': response.text})
-    except Exception as e:
-        logging.error(f"Error in message generation: {str(e)}")
-        emit('receive_message', {'message': "An error occurred while processing your request. Please try again later."})
+    # 1. Get the user's specific connection ID
+    client_sid = request.sid
 
+    # 2. Define the heavy AI work as a separate function
+    def background_chat():
+        try:
+            chat_prompt = (
+                f"Contexto: Uma leitura de tarô foi realizada com o seguinte resultado:\n\n"
+                f"{tarot_reading}\n\nIntencao do usuário {message}\n\n"
+                f"Por favor, forneça uma resposta com base neste contexto:"
+            )
+            response = model.generate_content(chat_prompt)
+            socketio.emit('receive_message', {'message': response.text}, to=client_sid)
+        except Exception as e:
+            logging.error(f"Error in message generation: {str(e)}")
+            socketio.emit('receive_message', {'message': "An error occurred while processing your request. Please try again later."}, to=client_sid)
+
+    # 3. Run it in the background!
+    socketio.start_background_task(background_chat)
 
 # =============================================================================
 # AI READING GENERATION
