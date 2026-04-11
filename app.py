@@ -443,7 +443,6 @@ def results():
 
         except (json.JSONDecodeError, ValueError, TypeError) as e:
             logging.warning(f"Card payload rejected: {e} | Raw payload: {selected_cards_data}")
-            flash('Dados inválidos. Por favor, selecione suas cartas novamente.', 'error')
             return redirect(url_for('cartas'))
 
         # Persist the chosen cards in the session so a GET reload can recover them.
