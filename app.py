@@ -449,7 +449,7 @@ def results():
 
         # Clear any cached reading from a previous session so a second
         # reading doesn't instantly return the first one from Redis
-        redis_client.delete(f"reading_cache:{session.sid}")
+        redis_client.delete(f"reading_cache:{request.cookies.get('session')}")
 
         return render_template('results.html', intencao=intencao,
                                selected_cards=selected_cards, choosed_cards=choosed_cards)
@@ -492,7 +492,7 @@ def handle_generation(data):
         return
 
     # Capture both IDs while still in request context
-    flask_session_id = session.sid
+    flask_session_id = request.cookies.get('session')
     client_sid = request.sid
     cache_key = f"reading_cache:{flask_session_id}"
 
