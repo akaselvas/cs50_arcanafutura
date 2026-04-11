@@ -424,31 +424,33 @@ def results():
     The actual AI reading is NOT generated here — it's triggered client-side
     via a WebSocket event after the page loads (see handle_generation below).
     """
+
     if request.method == 'POST':
         intencao = session.get('intencao', '')
         selected_cards = session.get('selected_cards', '')
         selected_cards_data = request.form.get('selected_cards_data')
 
         try:
-            # The chosen cards arrive as a JSON string from a hidden form field.
             choosed_cards = json.loads(selected_cards_data) if selected_cards_data else []
 
-            # Validate root type
             if not isinstance(choosed_cards, list):
                 raise ValueError("Payload root is not a list")
 
-            # Validate each card object has the required keys
-            if not all(isinstance(c, dict) and 'name' in c and 'value' in c for c in choosed_cards):
-                raise ValueError("One or more cards have an invalid structure")
+            for card in choosed_cards:
+                if not isinstance(card, dict) or 'name' not in card or 'value' not in card:
+                    raise ValueError(f"Invalid card structure detected: {card}")
 
         except (json.JSONDecodeError, ValueError, TypeError) as e:
-            logging.warning(f"Card payload rejected: {e} | Raw payload: {selected_cards_data}")
-            return redirect(url_for('cartas'))
+            logging.warning(f"Card payload rejected: {e} | Raw: {selected_cards_data}")
+            choosed_cards = []
 
-        # Persist the chosen cards in the session so a GET reload can recover them.
         session['choosed_cards'] = choosed_cards
-
         logging.info(f"Choosed Cards Data (POST): {selected_cards_data}")
+
+        # Clear any cached reading from a previous session so a second
+        # reading doesn't instantly return the first one from Redis
+        redis_client.delete(f"reading_cache:{session.sid}")
+
         return render_template('results.html', intencao=intencao,
                                selected_cards=selected_cards, choosed_cards=choosed_cards)
 
@@ -462,7 +464,6 @@ def results():
 
         return render_template('results.html', intencao=intencao,
                                selected_cards=selected_cards, choosed_cards=choosed_cards)
-
 # =============================================================================
 # SOCKET.IO EVENT HANDLERS
 # These functions are triggered by events emitted from the browser via WebSocket,
@@ -481,35 +482,41 @@ def handle_generation(data):
     the 'generation_complete' event.
     """
     csrf_token = data.get('csrf_token')
-
     if not csrf_token:
         emit('generation_error', {'message': 'CSRF token missing.'})
         return
-
     try:
         validate_csrf(csrf_token)
     except ValidationError as e:
         emit('generation_error', {'message': str(e)})
         return
 
-    intencao = data.get('intencao', '')
+    # Capture both IDs while still in request context
+    flask_session_id = session.sid
+    client_sid = request.sid
+    cache_key = f"reading_cache:{flask_session_id}"
+
+    # Return cached reading instantly if it exists (handles reconnects)
+    cached = redis_client.get(cache_key)
+    if cached:
+        logging.info("Returning cached reading to reconnected user.")
+        emit('generation_complete', {'reading': cached.decode('utf-8')})
+        return
+
+    intencao       = data.get('intencao', '')
     selected_cards = data.get('selected_cards', '')
-    choosed_cards = data.get('choosed_cards', [])
+    choosed_cards  = data.get('choosed_cards', [])
 
-    # 1. Get the user's specific connection ID
-    client_sid = request.sid 
-
-    # 2. Define the heavy AI work as a separate function
     def background_generate():
         reading_html = generate_tarot_reading(intencao, selected_cards, choosed_cards)
-        # Use socketio.emit and target the specific user with 'to=client_sid'
+
+        # Write directly to Redis — no Flask request context in background tasks,
+        # so we cannot use session here. Plain string, no serialization risk.
+        redis_client.setex(cache_key, 1800, reading_html)
+
         socketio.emit('generation_complete', {'reading': reading_html}, to=client_sid)
 
-    # 3. Tell SocketIO to run this in the background so the server doesn't freeze!
-    print(f"CSRF Token: {csrf_token}")
     socketio.start_background_task(background_generate)
-
-    # emit('generation_complete', {'reading': reading_html})
 
 
 @socketio.on('send_message')
@@ -523,11 +530,8 @@ def handle_message(data: Dict[str, str]):
     """
     message = sanitize_input(data['message'])
     tarot_reading = data.get('tarot_reading', '')
-
-    # 1. Get the user's specific connection ID
     client_sid = request.sid
 
-    # 2. Define the heavy AI work as a separate function
     def background_chat():
         try:
             chat_prompt = (
@@ -539,9 +543,10 @@ def handle_message(data: Dict[str, str]):
             socketio.emit('receive_message', {'message': response.text}, to=client_sid)
         except Exception as e:
             logging.error(f"Error in message generation: {str(e)}")
-            socketio.emit('receive_message', {'message': "An error occurred while processing your request. Please try again later."}, to=client_sid)
+            socketio.emit('receive_message', {
+                'message': "Ocorreu um erro ao processar sua mensagem. Tente novamente."
+            }, to=client_sid)
 
-    # 3. Run it in the background!
     socketio.start_background_task(background_chat)
 
 # =============================================================================
