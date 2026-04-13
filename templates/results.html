@@ -201,18 +201,16 @@
         showStatus('Conexão perdida. Tentando reconectar...', 'warning');
     });
 
-    socket.on('reconnect_attempt', (n) => {
+    socket.io.on('reconnect_attempt', (n) => {
         if (tarotReading !== '') return;
         showStatus(`Reconectando... (tentativa ${n} de 5)`, 'warning');
     });
 
-    socket.on('reconnect', () => {
-        // 'connect' fires right after and calls requestReading()
+    socket.io.on('reconnect', () => {
         showStatus('Conexão restaurada! Recuperando leitura...', 'success');
     });
 
-    socket.on('reconnect_failed', () => {
-        // All 5 attempts exhausted
+    socket.io.on('reconnect_failed', () => {
         loadingMessage.style.display = 'none';
         resultArea.style.display = 'block';
         document.getElementById('tarot-reading').innerHTML = `
