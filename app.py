@@ -508,13 +508,17 @@ def handle_generation(data):
     choosed_cards  = data.get('choosed_cards', [])
 
     def background_generate():
-        reading_html = generate_tarot_reading(intencao, selected_cards, choosed_cards)
+        try:
+            reading_html = generate_tarot_reading(intencao, selected_cards, choosed_cards)
 
-        # Write directly to Redis — no Flask request context in background tasks,
-        # so we cannot use session here. Plain string, no serialization risk.
-        redis_client.setex(cache_key, 1800, reading_html)
+            # Write directly to Redis
+            redis_client.setex(cache_key, 1800, reading_html)
 
-        socketio.emit('generation_complete', {'reading': reading_html}, to=client_sid)
+            socketio.emit('generation_complete', {'reading': reading_html}, to=client_sid)
+        except Exception as e:
+            logging.error(f"Background generation failed: {e}")
+            # Emit a real error instead of a fake reading!
+            socketio.emit('generation_error', {'message': 'Não foi possível gerar sua leitura no momento. Tente novamente mais tarde.'}, to=client_sid)
 
     socketio.start_background_task(background_generate)
 
@@ -569,15 +573,12 @@ def generate_tarot_reading(intencao: str, selected_cards: str, choosed_cards: Li
         f"As cartas tiradas são: {json.dumps(choosed_cards, ensure_ascii=False)}. "
     )
 
-    try:
-        response = model.generate_content(prompt)
-        reading = response.text or "Unable to generate reading."
-    except Exception as e:
-        logging.error(f"Error in tarot reading generation: {str(e)}")
-        reading = "We're sorry, but we couldn't generate your tarot reading at this time. Please try again later."
+    response = model.generate_content(prompt)
+    
+    if not response.text:
+        raise ValueError("A API retornou uma resposta vazia.")
 
-    # Convert the AI's Markdown output to HTML for browser rendering.
-    return markdown_to_html(reading)
+    return markdown_to_html(response.text)
 
 
 # --- Entry Point ---

@@ -47,7 +47,7 @@
             <div id="result-area" style="display:none;">
                 <p id="tarot-reading"></p>
                 <!-- Button to open the chat panel for follow-up questions. -->
-                <div class="container-botoes">
+                <div id="chat-button-container" class="container-botoes">
                     <button id="open-chat" type="button" class="botao-texto-grande">
                         quer conversar mais sobre a leitura?
                     </button>
@@ -255,6 +255,10 @@
         clearTimeout(longWaitTimer);
         loadingMessage.style.display = 'none';
         resultArea.style.display = 'block';
+
+        // HIDE THE CHAT BUTTON ON ERROR
+        document.getElementById('chat-button-container').style.display = 'none';
+
         document.getElementById('tarot-reading').innerHTML = `
             <p>Erro: ${data.message}</p>
             <p><a href="/" style="text-decoration:underline;">Tentar novamente</a></p>
