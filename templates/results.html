@@ -211,12 +211,13 @@
     });
 
     socket.io.on('reconnect_failed', () => {
-        loadingMessage.style.display = 'none';
-        resultArea.style.display = 'block';
-        document.getElementById('tarot-reading').innerHTML = `
-            <p style="color: rgba(233, 219, 174, 0.7); font-size: 0.95em;">
+        clearTimeout(longWaitTimer);
+        hideStatus(); // ← clears "Reconectando... (tentativa 5 de 5)"
+        // resultArea stays hidden — we never show it here so the chat button never appears
+        loadingMessage.innerHTML = `
+            <span style="color: rgba(233, 219, 174, 0.7); font-size: 0.95em;">
                 Não foi possível reconectar ao servidor.
-            </p>
+            </span>
             <a href="/" style="
                 display: inline-block;
                 margin-top: 14px;
@@ -235,7 +236,6 @@
                 tentar novamente
             </a>
         `;
-        clearTimeout(longWaitTimer);
     });
 
     // ----------------------------------------------------------------
