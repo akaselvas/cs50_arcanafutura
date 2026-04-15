@@ -105,12 +105,12 @@
 
         The Jinja2 condition is evaluated server-side, so this block is
         completely absent from the HTML sent to production users.
-    -->
+    
     { % if ('localhost' in request.host or '127.0.0.1' in request.host) and ':3000' not in request.host % }
     <script id="__bs_script__">//<![CDATA[
         document.write("<script async src='http://HOST:3000/browser-sync/browser-sync-client.js?v=2.29.3'><\/script>".replace("HOST", location.hostname));
     //]]></script>
     { % endif % }
-
+    -->
 </body>
 </html>
