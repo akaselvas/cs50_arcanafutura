@@ -143,6 +143,7 @@ body {
     object-fit: contain;
     animation: rotacao 60s linear infinite;
     /* One full rotation every 60 seconds. */
+    will-change: transform;
 }
 
 @keyframes rotacao {
@@ -827,6 +828,8 @@ textarea:focus {
     z-index: 998;
     /* Just below the chat panel (999) but above everything else. */
     transition: all 0.3s ease;
+    -webkit-backdrop-filter: blur(8px);
+    transform: translateZ(0);
 }
 
 .chat-interface {

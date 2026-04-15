@@ -359,6 +359,7 @@
     // CHAT PANEL — OPEN / CLOSE
     // ----------------------------------------------------------------
     openChatButton.addEventListener('click', () => {
+        document.querySelector('.decorCentroAnimate').style.animationPlayState = 'paused';
         chatInterface.style.display = 'flex';
         chatOverlay.style.display   = 'block';
         if (isFirstChatOpen) {
@@ -368,6 +369,7 @@
     });
 
     closeChatButton.addEventListener('click', () => {
+        document.querySelector('.decorCentroAnimate').style.animationPlayState = 'running';
         chatInterface.style.display = 'none';
         chatOverlay.style.display   = 'none';
     });
