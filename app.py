@@ -450,6 +450,7 @@ def results():
         # Clear any cached reading from a previous session so a second
         # reading doesn't instantly return the first one from Redis
         redis_client.delete(f"reading_cache:{request.cookies.get('session')}")
+        redis_client.delete(f"chat_history:{request.cookies.get('session')}")
 
         return render_template('results.html', intencao=intencao,
                                selected_cards=selected_cards, choosed_cards=choosed_cards)
@@ -534,21 +535,40 @@ def handle_message(data: Dict[str, str]):
     """
     message = sanitize_input(data['message'])
     tarot_reading = data.get('tarot_reading', '')
+    
+    # 1. Capture IDs
+    flask_sid = request.cookies.get('session')
     client_sid = request.sid
+    history_key = f"chat_history:{flask_sid}"
 
     def background_chat():
         try:
+            # 2. Retrieve existing history from Redis
+            raw_history = redis_client.get(history_key)
+            # We store history as a simple text string for the prompt
+            history_text = raw_history.decode('utf-8') if raw_history else ""
+
+            # 3. Build the prompt with History
             chat_prompt = (
-                f"Contexto: Uma leitura de tarô foi realizada com o seguinte resultado:\n\n"
-                f"{tarot_reading}\n\nIntencao do usuário {message}\n\n"
-                f"Por favor, forneça uma resposta com base neste contexto:"
+                f"Contexto da Leitura:\n{tarot_reading}\n\n"
+                f"Histórico da Conversa:\n{history_text}\n"
+                f"Usuário: {message}\n"
+                f"Tarólogo:"
             )
+
             response = model.generate_content(chat_prompt)
-            socketio.emit('receive_message', {'message': response.text}, to=client_sid)
+            ai_response = response.text
+
+            # 4. Update history in Redis (Append the new exchange)
+            new_history = history_text + f"Usuário: {message}\nTarólogo: {ai_response}\n"
+            redis_client.setex(history_key, 1800, new_history)
+
+            socketio.emit('receive_message', {'message': ai_response}, to=client_sid)
+            
         except Exception as e:
             logging.error(f"Error in message generation: {str(e)}")
             socketio.emit('receive_message', {
-                'message': "Ocorreu um erro ao processar sua mensagem. Tente novamente."
+                'message': "Ocorreu um erro ao processar sua mensagem."
             }, to=client_sid)
 
     socketio.start_background_task(background_chat)
