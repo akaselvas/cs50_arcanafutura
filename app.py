@@ -591,3 +591,4 @@ if __name__ == "__main__":
     # Host '0.0.0.0' allows access from external IPs (e.g., phone testing).
     # Debug is only enabled when NOT in production.
     socketio.run(app, debug=not is_production, host='0.0.0.0', port=5000) # nosec
+
