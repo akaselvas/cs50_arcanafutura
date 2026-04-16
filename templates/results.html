@@ -481,8 +481,20 @@
     function addMessage(sender, content) {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('chat-message', sender === 'user' ? 'user-message' : 'bot-message');
-        if (sender === 'bot') content = marked.parse(content);
-        messageDiv.innerHTML = `<div class="chat-message-content">${content}</div>`;
+
+        const contentDiv = document.createElement('div');
+        contentDiv.classList.add('chat-message-content');
+
+        if (sender === 'bot') {
+            // Bot messages are parsed from Markdown to HTML
+            contentDiv.innerHTML = marked.parse(content);
+        } else {
+            // USER messages are treated as PURE TEXT
+            // .textContent automatically neutralizes all HTML tags!
+            contentDiv.textContent = content;
+        }
+
+        messageDiv.appendChild(contentDiv);
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
