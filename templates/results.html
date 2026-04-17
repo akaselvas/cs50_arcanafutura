@@ -507,8 +507,11 @@
     // MOBILE KEYBOARD FOCUS MODE
     // ----------------------------------------------------------------
     function isTouchDevice() {
-        return window.location.hostname !== 'localhost' &&
-               window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+        // Exclude both 'localhost' and '127.0.0.1' from mobile UX logic
+        const isLocal = window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1';
+
+        return !isLocal && window.matchMedia("(hover: none) and (pointer: coarse)").matches;
     }
 
     userInput.addEventListener('focus', () => {
