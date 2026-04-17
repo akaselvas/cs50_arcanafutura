@@ -486,11 +486,15 @@
         contentDiv.classList.add('chat-message-content');
 
         if (sender === 'bot') {
-            // Bot messages are parsed from Markdown to HTML
-            contentDiv.innerHTML = marked.parse(content);
+            // Failsafe: only parse Markdown if marked.js loaded successfully
+            if (typeof marked !== 'undefined') {
+                contentDiv.innerHTML = marked.parse(content);
+            } else {
+                // Graceful fallback: show raw text instead of crashing
+                contentDiv.textContent = content;
+            }
         } else {
-            // USER messages are treated as PURE TEXT
-            // .textContent automatically neutralizes all HTML tags!
+            // User messages are always plain text (XSS protection)
             contentDiv.textContent = content;
         }
 

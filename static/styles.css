@@ -999,6 +999,21 @@ textarea:focus {
     text-decoration: underline;
 }
 
+.chat-message-content pre {
+    white-space: pre-wrap;       /* Wraps the text to the next line */
+    word-wrap: break-word;       /* Breaks long words if necessary */
+    background: rgba(0, 0, 0, 0.2); 
+    padding: 12px;
+    overflow-x: hidden;          /* Prevents the horizontal scrollbar */
+    margin: 10px 0;              /* Adds some space above and below the code */
+}
+
+.chat-message-content code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+    word-break: break-all;       /* Ensures long strings don't overflow */
+}
+
 
 /* ================================================ */
 /* 15. BREAKPOINTS                                  */
