@@ -533,8 +533,15 @@ def handle_message(data: Dict[str, str]):
     can give relevant answers to the user's questions. The response is emitted
     back via 'receive_message' for the frontend to display in the chat window.
     """
-    message = sanitize_input(data['message'])
+    raw_message = data.get('message')
+
+    if not raw_message:
+        logging.warning("Chat message rejected: Missing or empty 'message' key.")
+        return 
     
+    
+    message = sanitize_input(data['message'])
+
     if len(message) > 500:
         logging.warning(f"Chat message rejected: Exceeded 500 characters. Length: {len(message)}")
         emit('receive_message', {'message': 'Sua mensagem é muito longa. Por favor, resuma sua pergunta em até 500 caracteres.'})
