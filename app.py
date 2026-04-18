@@ -533,15 +533,13 @@ def handle_message(data: Dict[str, str]):
     can give relevant answers to the user's questions. The response is emitted
     back via 'receive_message' for the frontend to display in the chat window.
     """
-    raw_message = data.get('message', '')
-
-    # Backend length guard on RAW input, before sanitization
-    if len(raw_message) > 500:
-        logging.warning(f"Chat message rejected: {len(raw_message)} chars")
-        emit('receive_message', {'message': 'Sua mensagem é muito longa. Por favor, resuma em até 500 caracteres.'})
+    message = sanitize_input(data['message'])
+    
+    if len(message) > 500:
+        logging.warning(f"Chat message rejected: Exceeded 500 characters. Length: {len(message)}")
+        emit('receive_message', {'message': 'Sua mensagem é muito longa. Por favor, resuma sua pergunta em até 500 caracteres.'})
         return
     
-    message = sanitize_input(raw_message)
     tarot_reading = data.get('tarot_reading', '')
     
     # 1. Capture IDs
