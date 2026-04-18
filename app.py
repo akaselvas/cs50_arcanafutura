@@ -508,6 +508,11 @@ def handle_generation(data):
     selected_cards = data.get('selected_cards', '')
     choosed_cards  = data.get('choosed_cards', [])
 
+    if not choosed_cards or len(choosed_cards) == 0:
+        logging.warning("Generation rejected: choosed_cards array is empty.")
+        emit('generation_error', {'message': 'Nenhuma carta foi selecionada. Por favor, recomece a leitura.'})
+        return
+
     def background_generate():
         try:
             reading_html = generate_tarot_reading(intencao, selected_cards, choosed_cards)
