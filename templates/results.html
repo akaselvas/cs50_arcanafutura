@@ -90,7 +90,14 @@
     <div id="chat-messages" class="chat-messages"></div>
 
     <div class="chat-input-area">
-        <input type="text" id="user-input" class="chat-input" placeholder="Digite sua mensagem...">
+        <div style="position: relative; flex: 1;">
+            <input type="text" id="user-input" class="chat-input" 
+                placeholder="Digite sua mensagem..." maxlength="500">
+            <span id="char-counter" style="
+                position: absolute; bottom: 6px; right: 10px;
+                font-size: 0.7em; opacity: 0.4; pointer-events: none;
+            ">0/500</span>
+        </div>
         <button id="send-message" class="chat-send-button">Enviar</button>
     </div>
 </div>
@@ -502,6 +509,14 @@
         chatMessages.appendChild(messageDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
+
+    userInput.addEventListener('input', () => {
+        const counter = document.getElementById('char-counter');
+        const len = userInput.value.length;
+        counter.textContent = `${len}/500`;
+        counter.style.opacity = len > 450 ? '0.9' : '0.4';
+        counter.style.color = len > 450 ? '#e9a0a0' : '';
+    });
 
     // ----------------------------------------------------------------
     // MOBILE KEYBOARD FOCUS MODE
