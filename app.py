@@ -312,6 +312,12 @@ class TarotForm(FlaskForm):
 # =============================================================================
 # ROUTES
 # =============================================================================
+@app.route('/clear_session', methods=['POST'])
+@csrf.exempt  # Safe here: this route only destroys data, it never writes or reads sensitive state
+def clear_session():
+    session.clear()
+    return jsonify({'redirect': url_for('home')})
+
 
 @app.route('/')
 def home():

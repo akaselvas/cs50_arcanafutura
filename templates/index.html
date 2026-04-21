@@ -114,6 +114,9 @@
     Without this, the CSP would block all inline scripts entirely.
 -->
 <script nonce="{{ g.nonce }}">
+    // Mark this tab as the active session owner
+    sessionStorage.setItem('tab_active', '1');
+
     document.addEventListener('DOMContentLoaded', function() {
 
         const form               = document.getElementById('tarotForm');

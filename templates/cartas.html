@@ -84,6 +84,22 @@
     Flask generates a unique nonce per request and stores it in 'g'.
     Without it, the CSP would block this inline script from executing.
 */
+
+// PRIVACY GUARD: Check if this is a new tab/window
+    (function() {
+        if (!sessionStorage.getItem('tab_active')) {
+            // Tab was closed and reopened — kill the server session
+            fetch('/clear_session', {
+                method: 'POST'
+            }).then(() => {
+                window.location.href = '/';
+            });
+        } else {
+            // Tab is still alive — keep it marked
+            sessionStorage.setItem('tab_active', '1');
+        }
+    })();
+
 document.addEventListener('DOMContentLoaded', function () {
 
     const cards            = document.querySelectorAll('.card');
