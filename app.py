@@ -446,6 +446,8 @@ def results():
 
         session['choosed_cards'] = choosed_cards
         logging.info(f"Choosed Cards Data (POST): {selected_cards_data}")
+        logging.info(f"DEBUG: is_production={is_production}, current limit={rate_limit}")
+        
 
         # Clear any cached reading from a previous session so a second
         # reading doesn't instantly return the first one from Redis
