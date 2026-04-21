@@ -55,7 +55,7 @@ app = Flask(__name__)
 # ProxyFix tells Flask to trust the forwarded headers from Render's reverse proxy.
 # Without this, Flask would see the proxy's IP instead of the real client's IP,
 # which would break rate limiting and HTTPS detection.
-# app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2, x_proto=1, x_host=1, x_prefix=1)
 
 # Initialize Socket.IO for real-time, bidirectional communication with the browser.
@@ -87,7 +87,7 @@ app.config.update(
     # Forcing HTTPS locally would break development on http://localhost.
     SESSION_COOKIE_SECURE=is_production,
 
-    SESSION_COOKIE_HTTPONLY=True,  # Prevents JavaScript from reading the session cookie (XSS defense)
+    SESSION_COOKIE_HTTPONLY=True,  # Prevents JavaScript from reading the session cookie (XSS defense).
     SESSION_COOKIE_SAMESITE='Lax', # Helps prevent CSRF by restricting cross-site cookie sending
     SESSION_COOKIE_NAME='session',
     PERMANENT_SESSION_LIFETIME=timedelta(minutes=30),  # Auto-expire sessions after 30 minutes of inactivity
@@ -371,22 +371,22 @@ def process_form():
 def cartas():
     """
     Renders the card selection page where the user picks their cards.
-
     The full 22-card deck is shuffled and each card is randomly assigned
     an orientation ('normal' or 'invertido'), which influences the AI reading.
-
     The deck is split into 3 visual groups for the UI layout, and the
     number of cards the user should pick is passed to the template.
     """
-    try:
-        selected_cards = int(session.get('selected_cards', 0))
-    except (TypeError, ValueError):
-        # If the session value is missing or corrupt, send the user back to start.
+    # 1. Get the raw value from session
+    raw_val = session.get('selected_cards')
+    
+    # 2. Validate: Must be one of our allowed strings
+    if raw_val not in ['1', '3', '5']:
         return redirect(url_for('home'))
+        
+    # 3. Convert to int for the template
+    selected_cards = int(raw_val)
 
-    # Shallow-copy each card dict before modifying it.
-    # This is critical: without copying, we'd be mutating the global TAROT_CARDS
-    # list, causing the 'invertido'/'normal' value to persist between requests.
+    # 4. Shallow-copy each card dict before modifying it.
     deck_copy = [card.copy() for card in TAROT_CARDS]
     shuffled_cards = random.sample(deck_copy, len(deck_copy))
 
