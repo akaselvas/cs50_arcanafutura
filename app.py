@@ -55,7 +55,8 @@ app = Flask(__name__)
 # ProxyFix tells Flask to trust the forwarded headers from Render's reverse proxy.
 # Without this, Flask would see the proxy's IP instead of the real client's IP,
 # which would break rate limiting and HTTPS detection.
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+# app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2, x_proto=1, x_host=1, x_prefix=1)
 
 # Initialize Socket.IO for real-time, bidirectional communication with the browser.
 # cors_allowed_origins="*" allows any domain to connect (fine for a student project).
