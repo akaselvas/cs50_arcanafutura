@@ -320,6 +320,9 @@ def home():
     A TarotForm instance is passed to the template so the CSRF token
     hidden field is available in the HTML form.
     """
+    client_ip = get_remote_address()
+    logging.info(f"QA DEBUG: Home page accessed by IP: {client_ip}")
+    
     form = TarotForm()
     return render_template('index.html', form=form)
 
@@ -447,7 +450,7 @@ def results():
         session['choosed_cards'] = choosed_cards
         logging.info(f"Choosed Cards Data (POST): {selected_cards_data}")
         logging.info(f"DEBUG: is_production={is_production}, current limit={rate_limit}")
-        
+
 
         # Clear any cached reading from a previous session so a second
         # reading doesn't instantly return the first one from Redis
