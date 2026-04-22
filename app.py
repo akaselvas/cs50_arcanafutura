@@ -156,12 +156,12 @@ limiter = Limiter(
 # (scripts, styles, fonts, etc.) the browser is allowed to load.
 # This significantly reduces the risk of XSS attacks.
 csp = {
-    'default-src': "'self'",       # Only allow resources from the same origin by default
+    'default-src': "'self'",
     'style-src': ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
-    'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdnjs.cloudflare.com"],
+    'script-src': ["'self'", "https://cdnjs.cloudflare.com"],
     'font-src': ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
     'img-src': ["'self'", "data:"],
-    'connect-src': ["'self'", "wss:", "ws:"]  # Allow WebSocket connections
+    'connect-src': ["'self'", "wss:", "ws:"]
 }
 
 # In local development, extend the CSP to allow connections from BrowserSync,
@@ -187,7 +187,8 @@ if not is_production:
 
 # Apply the CSP via Flask-Talisman, which also adds other security headers
 # like HSTS (HTTP Strict Transport Security) and X-Content-Type-Options.
-Talisman(app, content_security_policy=csp)
+Talisman(app, content_security_policy=csp, content_security_policy_nonce_in=['script-src'])
+
 
 
 # --- Input Sanitization ---
