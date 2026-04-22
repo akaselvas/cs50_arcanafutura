@@ -78,7 +78,7 @@
 </div>
 
 
-<script nonce="{{ g.nonce }}">
+<script nonce="{{ csp_nonce() }}">
 /*
     nonce="{{ g.nonce }}" — required by the Content Security Policy (CSP).
     Flask generates a unique nonce per request and stores it in 'g'.

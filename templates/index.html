@@ -113,7 +113,7 @@
     knows this specific inline script is intentional and safe to execute.
     Without this, the CSP would block all inline scripts entirely.
 -->
-<script nonce="{{ g.nonce }}">
+<script nonce="{{ csp_nonce() }}">
     // Mark this tab as the active session owner
     sessionStorage.setItem('tab_active', '1');
 
