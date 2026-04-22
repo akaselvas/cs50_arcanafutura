@@ -155,39 +155,41 @@ limiter = Limiter(
 # CSP is a browser security feature that restricts which sources of content
 # (scripts, styles, fonts, etc.) the browser is allowed to load.
 # This significantly reduces the risk of XSS attacks.
-csp = {
-    'default-src': "'self'",       # Only allow resources from the same origin by default
-    'style-src': ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
-    'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdnjs.cloudflare.com"],
-    'font-src': ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
-    'img-src': ["'self'", "data:"],
-    'connect-src': ["'self'", "wss:", "ws:"]  # Allow WebSocket connections
-}
+# --- Content Security Policy (CSP) ---
+def get_csp():
+    """
+    Generates a dynamic CSP for each request.
+    Uses the unique g.nonce to allow our own inline scripts,
+    while blocking all unauthorized inline scripts (removing 'unsafe-inline').
+    """
+    csp = {
+        'default-src': "'self'",
+        'style-src': ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+        
+        # FIX: Removed 'unsafe-inline' and added the dynamic nonce!
+        'script-src': ["'self'", f"'nonce-{g.nonce}'", "'unsafe-eval'", "https://cdnjs.cloudflare.com"],
+        
+        'font-src': ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+        'img-src': ["'self'", "data:"],
+        'connect-src': ["'self'", "wss:", "ws:"]
+    }
 
-# In local development, extend the CSP to allow connections from BrowserSync,
-# Responsively App, and other local dev tools that run on different ports.
-if not is_production:
-    csp['script-src'] += [
-        "http://localhost:3000",
-        "http://192.168.0.102:3000",
-        "https://localhost:*",
-        "http://localhost:*"
-    ]
-    csp['img-src'] += [
-        "http://localhost:3000",
-        "http://192.168.0.102:3000"
-    ]
-    csp['connect-src'] += [
-        "http://localhost:5000",     "ws://localhost:5000",
-        "http://localhost:3000",     "ws://localhost:3000",
-        "http://192.168.0.102:5000", "ws://192.168.0.102:5000",
-        "http://192.168.0.102:3000", "ws://192.168.0.102:3000",
-        "https://localhost:*",       "wss://localhost:*"
-    ]
+    if not is_production:
+        csp['script-src'] += [
+            "http://localhost:3000", "http://192.168.0.102:3000",
+            "https://localhost:*", "http://localhost:*"
+        ]
+        csp['img-src'] += ["http://localhost:3000", "http://192.168.0.102:3000"]
+        csp['connect-src'] += [
+            "http://localhost:5000", "ws://localhost:5000",
+            "http://localhost:3000", "ws://localhost:3000",
+            "http://192.168.0.102:5000", "ws://192.168.0.102:5000",
+            "https://localhost:*", "wss://localhost:*"
+        ]
+    return csp
 
-# Apply the CSP via Flask-Talisman, which also adds other security headers
-# like HSTS (HTTP Strict Transport Security) and X-Content-Type-Options.
-Talisman(app, content_security_policy=csp)
+# Apply the CSP via Flask-Talisman using the function
+Talisman(app, content_security_policy=get_csp)
 
 
 # --- Input Sanitization ---
