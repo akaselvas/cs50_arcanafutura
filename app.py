@@ -239,7 +239,7 @@ def before_request():
     The nonce can be used in templates for inline script tags to comply
     with a strict CSP without needing 'unsafe-inline'.
     """
-    g.nonce = secrets.token_hex(16)
+    # g.nonce = secrets.token_hex(16)
 
 
 # --- AI Model Setup ---
