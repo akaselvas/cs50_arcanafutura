@@ -2380,11 +2380,12 @@ textarea:focus {
 
     /* Phone icon animates to demonstrate the desired rotation direction. */
     .rotate-icon {
-        font-size: 60px;
         color: #E9DBAE;
         margin-bottom: 20px;
         display: inline-block;
-        animation: rotate-phone 2s infinite ease-in-out;
+        /* origin must be center for a clean spin */
+        transform-origin: center center;
+        animation: rotate-phone 2.2s infinite ease-in-out;
     }
 
     /* Hide the actual app to prevent rendering glitches visible behind the overlay. */
@@ -2399,18 +2400,10 @@ textarea:focus {
 }
 
 @keyframes rotate-phone {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    50% {
-        transform: rotate(-90deg);
-    }
-
-    /* Snaps to portrait position. */
-    100% {
-        transform: rotate(-90deg);
-    }
+    0%   { transform: rotate(-90deg); } /* starts in landscape */
+    35%  { transform: rotate(0deg);   } /* snaps to portrait   */
+    75%  { transform: rotate(0deg);   } /* holds portrait      */
+    100% { transform: rotate(-90deg); } /* loops back          */
 }
 
 
