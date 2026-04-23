@@ -2279,29 +2279,35 @@ textarea:focus {
 
 @media (max-width: 1080px) {
 
-    /* Hide the navbar so the textarea can move toward the top. */
+    /* 1. Hide the navbar */
     body.keyboard-active .navbar {
-        display: none;
+        display: none !important;
     }
 
-    /* Fade the corner decorations rather than removing them to avoid a layout jump. */
+    /* 2. Fade corner decorations */
     body.keyboard-active .container4cantos {
         opacity: 0.2;
     }
 
-    /* Remove the headline and paragraph — only the textarea needs to be visible while typing. */
+    /* 3. Hide the headline and instructions */
     body.keyboard-active .text-group .texto-destacado,
     body.keyboard-active .text-group .txt-parafrafo {
-        display: none;
+        display: none !important;
     }
 
-    /* Hide the card-count options and submit button below the fold. */
-    body.keyboard-active .options-container,
-    body.keyboard-active .insideIndex>div:last-child {
-        display: none;
+    /* 4. FIX: Hide the options container (text + 1,3,5 buttons) */
+    /* We target it directly regardless of nesting */
+    body.keyboard-active .options-container {
+        display: none !important;
     }
 
-    /* Vertically centre the textarea in the remaining space above the keyboard. */
+    /* 5. FIX: Hide the "vamos começar" button container */
+    /* We target the last div inside the form */
+    body.keyboard-active #tarotForm > div:last-child {
+        display: none !important;
+    }
+
+    /* 6. Center the remaining textarea */
     body.keyboard-active .insideIndex {
         justify-content: center;
         padding-top: 0;
@@ -2312,7 +2318,6 @@ textarea:focus {
         top: 0;
     }
 
-    /* Slight scale-up reinforces that the textarea is now the primary focus. */
     body.keyboard-active textarea {
         transform: scale(1.05);
         transition: transform 0.3s ease;
