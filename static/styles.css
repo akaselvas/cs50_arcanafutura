@@ -2383,9 +2383,23 @@ textarea:focus {
         color: #E9DBAE;
         margin-bottom: 20px;
         display: inline-block;
-        /* origin must be center for a clean spin */
-        transform-origin: center center;
-        animation: rotate-phone 2.2s infinite ease-in-out;
+    }
+
+    /* outer group: controls the landscape ↔ portrait rotation */
+    .phone-rotate {
+        transform-origin: 55px 55px;
+        animation: phone-rotate 3.8s infinite;
+    }
+
+    /* inner group: controls the expand/collapse from the bottom edge */
+    .phone-body {
+        transform-origin: 55px 85px; /* bottom center of the phone */
+        animation: phone-scale 3.8s infinite;
+    }
+
+    /* speaker + home button only appear once the phone is in portrait */
+    .phone-details {
+        animation: details-fade 3.8s infinite;
     }
 
     /* Hide the actual app to prevent rendering glitches visible behind the overlay. */
@@ -2399,11 +2413,31 @@ textarea:focus {
     }
 }
 
-@keyframes rotate-phone {
-    0%   { transform: rotate(-90deg); } /* starts in landscape */
-    35%  { transform: rotate(0deg);   } /* snaps to portrait   */
-    75%  { transform: rotate(0deg);   } /* holds portrait      */
-    100% { transform: rotate(-90deg); } /* loops back          */
+@keyframes phone-rotate {
+    0%   { transform: rotate(-90deg); }                                                           /* line is vertical */
+    8%   { transform: rotate(-90deg); }                                                           /* phone starts expanding */
+    40%  { transform: rotate(-90deg); animation-timing-function: cubic-bezier(0.34, 1.4, 0.64, 1); } /* fully expanded, spring snap starts */
+    58%  { transform: rotate(0deg); }                                                             /* arrived at portrait */
+    70%  { transform: rotate(0deg); }                                                             /* hold portrait */
+    86%  { transform: rotate(0deg); animation-timing-function: ease-in-out; }                    /* phone collapsed, line starts rotating */
+    100% { transform: rotate(-90deg); }                                                           /* line back to vertical */
+}
+
+@keyframes phone-scale {
+    0%   { transform: scaleY(0); }                                                                /* just a line */
+    8%   { transform: scaleY(0); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }    /* smooth expand out */
+    38%  { transform: scaleY(1); }                                                                /* fully expanded */
+    66%  { transform: scaleY(1); animation-timing-function: cubic-bezier(0.64, 0, 0.78, 0); }    /* snappy collapse in */
+    84%  { transform: scaleY(0); }                                                                /* back to line */
+    100% { transform: scaleY(0); }                                                                /* stay line during rotation */
+}
+
+@keyframes details-fade {
+    0%, 35% { opacity: 0; }
+    45%     { opacity: 1; }
+    68%     { opacity: 1; }
+    82%     { opacity: 0; }
+    100%    { opacity: 0; }
 }
 
 
