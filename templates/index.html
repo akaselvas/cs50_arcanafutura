@@ -209,39 +209,45 @@
         // over error handling without a full page reload.
         // ----------------------------------------------------------------
         form.addEventListener('submit', async function(e) {
-            e.preventDefault(); // Stop the browser's default form POST.
+            e.preventDefault();
 
-            // Guard: ensure the user picked a card count before submitting.
             if (!selectedCardsInput.value) {
                 alert('Por favor, selecione o número de cartas antes de continuar.');
                 return;
             }
 
-            // FormData automatically serializes all named form fields,
-            // including the hidden CSRF token and selectedCards inputs.
+            // --- NEW: LOCK BUTTON ---
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerText;
+            
+            submitBtn.disabled = true;
+            submitBtn.innerText = "carregando...";
+            submitBtn.style.opacity = "0.5";
+            submitBtn.style.cursor = "not-allowed";
+            // ------------------------
+
             const formData = new FormData(form);
 
             try {
                 const response = await fetch(form.action, {
                     method: 'POST',
                     body: formData,
-                    headers: {
-                        // This header lets Flask distinguish AJAX requests
-                        // from regular browser form submissions in the CSRF
-                        // error handler (see app.py handle_csrf_error).
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                    credentials: 'same-origin' // Send the session cookie with the request.
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin'
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    // Server returns { redirect: '/cartas' } on success.
                     window.location.href = data.redirect;
                 } else {
-                    // If the CSRF token expired, reload to get a fresh one
-                    // rather than showing a confusing error message.
+                    // --- NEW: UNLOCK ON ERROR ---
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = originalText;
+                    submitBtn.style.opacity = "1";
+                    submitBtn.style.cursor = "pointer";
+                    // ----------------------------
+
                     if (data.error && data.error.includes('CSRF')) {
                         window.location.reload();
                         return;
@@ -249,7 +255,12 @@
                     alert(data.error || 'Ocorreu um erro. Por favor, tente novamente.');
                 }
             } catch (error) {
-                // Network-level failure (offline, server down, etc.)
+                // --- NEW: UNLOCK ON NETWORK ERROR ---
+                submitBtn.disabled = false;
+                submitBtn.innerText = originalText;
+                submitBtn.style.opacity = "1";
+                submitBtn.style.cursor = "pointer";
+                // ------------------------------------
                 console.error('Submission error:', error);
                 alert('Ocorreu um erro. Por favor, tente novamente.');
             }

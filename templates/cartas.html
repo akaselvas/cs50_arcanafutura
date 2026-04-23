@@ -242,35 +242,32 @@ document.addEventListener('DOMContentLoaded', function () {
     leituraButton.addEventListener('click', function (e) {
         e.preventDefault();
 
-        // Create a temporary <form> element that will be submitted immediately.
-        const form    = document.createElement('form');
-        form.method   = 'POST';
-        form.action   = '{{ url_for("results") }}'; // Jinja2 resolves the Flask route URL
+        // --- NEW: LOCK BUTTON ---
+        leituraButton.disabled = true;
+        leituraButton.innerText = "preparando leitura...";
+        leituraButton.style.opacity = "0.5";
+        leituraButton.style.cursor = "not-allowed";
+        // ------------------------
 
-        // Hidden field 1: the selected cards as a JSON string.
-        // The /results route parses this with json.loads() on the server side.
-        const dataInput   = document.createElement('input');
-        dataInput.type    = 'hidden';
-        dataInput.name    = 'selected_cards_data';
-        dataInput.value   = JSON.stringify(selectedCardsData);
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("results") }}';
+
+        const dataInput = document.createElement('input');
+        dataInput.type = 'hidden';
+        dataInput.name = 'selected_cards_data';
+        dataInput.value = JSON.stringify(selectedCardsData);
         form.appendChild(dataInput);
 
-        // Hidden field 2: a fresh CSRF token.
-        // This form is created dynamically, so we can't use Flask-WTF's
-        // form class here. Instead, csrf_token() is called directly in the
-        // Jinja2 template to embed the token value at page-render time.
-        const csrfInput   = document.createElement('input');
-        csrfInput.type    = 'hidden';
-        csrfInput.name    = 'csrf_token';
-        csrfInput.value   = '{{ csrf_token() }}';
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = '{{ csrf_token() }}';
         form.appendChild(csrfInput);
 
-        // Attach the form to the DOM (required for .submit() to work in all browsers),
-        // submit it, then the browser navigates away — no need to clean it up.
         document.body.appendChild(form);
         form.submit();
     });
-
 });
 </script>
 {% endblock %}
