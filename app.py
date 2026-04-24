@@ -401,17 +401,27 @@ def cartas():
     The deck is split into 3 visual groups for the UI layout, and the
     number of cards the user should pick is passed to the template.
     """
-    # 1. Get the raw value from session
+    # Get the session ID
+    session_id = request.cookies.get('session')
+    
+    # THE DESTINY LOCK
+    # If a reading already exists in the cache, the user has already "committed".
+    # Do not let them pick cards again; send them straight to the results.
+    if session_id and redis_client.exists(f"reading_cache:{session_id}"):
+        logging.info(f"User attempted to re-access /cartas. Redirecting to existing reading.")
+        return redirect(url_for('results'))
+
+    # Get the raw value from session
     raw_val = session.get('selected_cards')
     
-    # 2. Validate: Must be one of our allowed strings
+    # Validate: Must be one of our allowed strings
     if raw_val not in ['1', '3', '5']:
         return redirect(url_for('home'))
         
-    # 3. Convert to int for the template
+    # Convert to int for the template
     selected_cards = int(raw_val)
 
-    # 4. Shallow-copy each card dict before modifying it.
+    # Shallow-copy each card dict before modifying it.
     deck_copy = [card.copy() for card in TAROT_CARDS]
     shuffled_cards = random.sample(deck_copy, len(deck_copy))
 
