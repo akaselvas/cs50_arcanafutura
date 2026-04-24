@@ -328,6 +328,14 @@ def home():
     A TarotForm instance is passed to the template so the CSRF token
     hidden field is available in the HTML form.
     """
+    # Clear cache ONLY on the home page
+    session_id = request.cookies.get('session')
+    if session_id:
+        redis_client.delete(f"reading_cache:{session_id}")
+        redis_client.delete(f"chat_history:{session_id}")
+    
+    session.clear()
+
     client_ip = get_remote_address()
     logging.info(f"QA DEBUG: Home page accessed by IP: {client_ip}")
     
@@ -462,8 +470,8 @@ def results():
 
         # Clear any cached reading from a previous session so a second
         # reading doesn't instantly return the first one from Redis
-        redis_client.delete(f"reading_cache:{request.cookies.get('session')}")
-        redis_client.delete(f"chat_history:{request.cookies.get('session')}")
+        # redis_client.delete(f"reading_cache:{request.cookies.get('session')}")
+        # redis_client.delete(f"chat_history:{request.cookies.get('session')}")
 
         return render_template('results.html', intencao=intencao,
                                selected_cards=selected_cards, choosed_cards=choosed_cards)

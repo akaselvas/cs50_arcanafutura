@@ -271,10 +271,14 @@
     // This lives outside DOMContentLoaded to ensure it catches bfcache restores.
     // ----------------------------------------------------------------
     window.addEventListener('pageshow', function(event) {
+        // 1. Clear the gameplay lock flag because we are starting a brand new game
+        sessionStorage.removeItem('reading_committed');
+
         const submitBtn = document.querySelector('#tarotForm button[type="submit"]');
         const botoes    = document.querySelectorAll('.botao-personalizado');
         const selectedCardsInput = document.getElementById('selectedCards');
         
+        // 2. Reset the submit button
         if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.innerText = "vamos começar";
@@ -282,12 +286,12 @@
             submitBtn.style.cursor = "pointer";
         }
 
-        // Reset the hidden input
+        // 3. Reset the hidden input
         if (selectedCardsInput) {
             selectedCardsInput.value = "";
         }
 
-        // NEW: Reset the buttons visually so they don't look "selected"
+        // 4. Reset the card selection buttons visually
         if (botoes) {
             botoes.forEach(b => {
                 b.classList.remove('active');

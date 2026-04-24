@@ -279,6 +279,8 @@
         clearTimeout(longWaitTimer);
         hideStatus();
         tarotReading = data.reading;
+        //Mark this reading as complete in the browser's memory
+        // sessionStorage.setItem('reading_committed', 'true');
         loadingMessage.style.display = 'none';
         resultArea.style.display = 'block';
         document.getElementById('tarot-reading').innerHTML = data.reading;
