@@ -379,6 +379,16 @@ def process_form():
     session['intencao'] = intencao
     session['selected_cards'] = selected_cards
 
+    # =====================================================================
+    # Clear the old reading cache here!
+    # Because POST requests are never cached by the browser, this guarantees
+    # the old reading is wiped out the exact moment a NEW game starts.
+    # =====================================================================
+    session_id = request.cookies.get('session')
+    if session_id:
+        redis_client.delete(f"reading_cache:{session_id}")
+        redis_client.delete(f"chat_history:{session_id}")
+
     return jsonify({'redirect': url_for('cartas')})
 
 
