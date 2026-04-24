@@ -329,10 +329,10 @@ def home():
     hidden field is available in the HTML form.
     """
     # Clear cache ONLY on the home page
-    session_id = request.cookies.get('session')
-    if session_id:
-        redis_client.delete(f"reading_cache:{session_id}")
-        redis_client.delete(f"chat_history:{session_id}")
+    # session_id = request.cookies.get('session')
+    # if session_id:
+    #     redis_client.delete(f"reading_cache:{session_id}")
+    #     redis_client.delete(f"chat_history:{session_id}")
     
     session.clear()
 
