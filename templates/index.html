@@ -266,5 +266,35 @@
             }
         });
     });
+    // ----------------------------------------------------------------
+    // FIX FOR "BACK" BUTTON STUCK STATE
+    // This lives outside DOMContentLoaded to ensure it catches bfcache restores.
+    // ----------------------------------------------------------------
+    window.addEventListener('pageshow', function(event) {
+        const submitBtn = document.querySelector('#tarotForm button[type="submit"]');
+        const botoes    = document.querySelectorAll('.botao-personalizado');
+        const selectedCardsInput = document.getElementById('selectedCards');
+        
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = "vamos começar";
+            submitBtn.style.opacity = "1";
+            submitBtn.style.cursor = "pointer";
+        }
+
+        // Reset the hidden input
+        if (selectedCardsInput) {
+            selectedCardsInput.value = "";
+        }
+
+        // NEW: Reset the buttons visually so they don't look "selected"
+        if (botoes) {
+            botoes.forEach(b => {
+                b.classList.remove('active');
+                b.style.opacity = '1';
+                b.disabled = false;
+            });
+        }
+    });
 </script>
 {% endblock %}
