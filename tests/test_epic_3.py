@@ -3,34 +3,6 @@ from unittest.mock import MagicMock, patch
 from markupsafe import Markup
 from app import markdown_to_html, generate_tarot_reading
 
-
-# =============================================================================
-# FIXTURES
-#
-# Two clients are used throughout:
-#   - `client`      → CSRF disabled. Used for all functional/business-logic tests
-#                     so we're testing the route behavior, not the token mechanism.
-#   - `csrf_client` → CSRF enabled. Used ONLY for the CSRF security tests that
-#                     explicitly verify the token rejection behavior.
-# =============================================================================
-
-@pytest.fixture
-def client():
-    app.config['TESTING'] = True
-    app.config['WTF_CSRF_ENABLED'] = False
-    with app.test_client() as client:
-        yield client
-    app.config['WTF_CSRF_ENABLED'] = True  # Reset for test isolation
-
-
-@pytest.fixture
-def csrf_client():
-    app.config['TESTING'] = True
-    app.config['WTF_CSRF_ENABLED'] = True
-    with app.test_client() as client:
-        yield client
-    app.config['WTF_CSRF_ENABLED'] = False  # Reset for test isolation
-
 # =============================================================================
 # EPIC 03 — AI Reading Generation (WebSocket Reliability)
 #
