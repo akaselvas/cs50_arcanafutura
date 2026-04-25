@@ -14,66 +14,48 @@
 {% block content %}
 <div class="insideCards">
 
-    <!--
-        CARD ROWS (Server-rendered via Jinja2)
-        The Python route shuffles the 22-card deck and splits it into 3 groups
-        (7 + 8 + 7). Each card is rendered as an empty <button> — face-down
-        by default via CSS. The actual card data (image, name, orientation) is
-        stored in data-* attributes so JavaScript can read it on click without
-        making any extra server requests.
-    -->
-    <div class="flex-container">
-        {% for card in cards_group1 %}
-        <button class="card"
-                data-image="{{ card.image }}"
-                data-name="{{ card.name }}"
-                data-value="{{ card.value }}">  {# "normal" or "invertido" #}
-        </button>
-        {% endfor %}
-    </div>
+    {% if choosed_cards %}
+        <!-- BRANCH 1: LOCKED STATE (User already picked cards) -->
+        <div id="selection-stage" class="flex-container stage-{{ selected_cards }}" style="display: flex; flex-grow: 1; align-items: center;">
+            {% for card in choosed_cards %}
+                <button class="card clicked" 
+                        style="background-image: url('{{ card.image }}'); transform: {{ 'rotateX(180deg)' if card.value == 'invertido' else 'rotateY(180deg)' }};">
+                </button>
+            {% endfor %}
+        </div>
 
-    <div class="flex-container">
-        {% for card in cards_group2 %}
-        <button class="card"
-                data-image="{{ card.image }}"
-                data-name="{{ card.name }}"
-                data-value="{{ card.value }}">
-        </button>
-        {% endfor %}
-    </div>
+        <div class="container-botoes" style="display: flex;">
+            <button type="button" class="botao-texto-grande" disabled style="opacity: 0.5; cursor: not-allowed;">
+                leitura já iniciada
+            </button>
+        </div>
 
-    <div class="flex-container">
-        {% for card in cards_group3 %}
-        <button class="card"
-                data-image="{{ card.image }}"
-                data-name="{{ card.name }}"
-                data-value="{{ card.value }}">
-        </button>
-        {% endfor %}
-    </div>
+    {% else %}
+        <!-- BRANCH 2: NORMAL STATE (22 Face-down cards) -->
+        <div class="flex-container">
+            {% for card in cards_group1 %}
+            <button class="card" data-image="{{ card.image }}" data-name="{{ card.name }}" data-value="{{ card.value }}"></button>
+            {% endfor %}
+        </div>
+        <div class="flex-container">
+            {% for card in cards_group2 %}
+            <button class="card" data-image="{{ card.image }}" data-name="{{ card.name }}" data-value="{{ card.value }}"></button>
+            {% endfor %}
+        </div>
+        <div class="flex-container">
+            {% for card in cards_group3 %}
+            <button class="card" data-image="{{ card.image }}" data-name="{{ card.name }}" data-value="{{ card.value }}"></button>
+            {% endfor %}
+        </div>
 
-    <!--
-        SELECTION STAGE (Initially Hidden)
-        An empty container that serves as the "display area" for chosen cards.
-        After the user finishes selecting, JavaScript fades out the three rows
-        above and moves the picked cards into this div, which is then revealed.
-        Starting as display:none means it takes up no space until it's needed.
-    -->
-    <div id="selection-stage" class="flex-container" style="display: none; flex-grow: 1; align-items: center;">
-        <!-- Selected cards are moved here by JavaScript (see performTransition) -->
-    </div>
+        <div id="selection-stage" class="flex-container" style="display: none; flex-grow: 1; align-items: center;"></div>
 
-    <!--
-        SUBMIT BUTTON (Initially Hidden)
-        Only shown after the user has finished picking all their cards and the
-        transition animation completes. Hidden via inline style so it's
-        invisible on page load without needing an extra CSS class toggle.
-    -->
-    <div class="container-botoes" style="display: none;">
-        <button type="button" class="botao-texto-grande" id="leituraButton">
-            vamos fazer a leitura
-        </button>
-    </div>
+        <div class="container-botoes" style="display: none;">
+            <button type="button" class="botao-texto-grande" id="leituraButton">
+                vamos fazer a leitura
+            </button>
+        </div>
+    {% endif %}
 
 </div>
 
@@ -106,7 +88,54 @@ document.addEventListener('DOMContentLoaded', function () {
     const selectedCardsCount = {{ selected_cards }}; // Jinja2 injects the integer (1, 3, or 5) directly
     let clickedCards       = 0;   // Running count of how many cards the user has picked
     let selectedCardsData  = [];  // Array of { name, value } objects for the chosen cards
+    // =================================================================
+    // NEW: RESTORE STATE IF USER ALREADY PLAYED (Handles Page Refresh)
+    // =================================================================
+    const preSelectedCards = {{ choosed_cards | default([]) | tojson }};
 
+    if (preSelectedCards.length > 0) {
+        const allRows = document.querySelectorAll('.insideCards > .flex-container:not(#selection-stage)');
+        const stage = document.getElementById('selection-stage');
+        const botoes = document.querySelector('.container-botoes');
+        const leituraButton = document.getElementById('leituraButton');
+
+        // 1. Hide the 3 rows of face-down cards
+        allRows.forEach(row => row.style.display = 'none');
+
+        // 2. Setup the stage layout
+        stage.className = 'flex-container stage-' + preSelectedCards.length;
+
+        // 3. Find the exact cards the user picked, flip them, and move them to the stage
+        preSelectedCards.forEach(savedCard => {
+            const cardBtn = document.querySelector(`.card[data-name="${savedCard.name}"]`);
+            if (cardBtn) {
+                cardBtn.classList.add('clicked');
+                cardBtn.style.backgroundImage = `url("${cardBtn.getAttribute('data-image')}")`;
+                
+                // Apply the saved orientation (normal/invertido)
+                cardBtn.setAttribute('data-value', savedCard.value);
+                const isInverted = savedCard.value === 'invertido';
+                cardBtn.style.transform = isInverted ? "rotateX(180deg)" : "rotateY(180deg)";
+                
+                stage.appendChild(cardBtn);
+            }
+        });
+
+        // 4. Reveal the stage and lock the button
+        stage.style.display = 'flex';
+        botoes.style.display = 'flex';
+
+        if (leituraButton) {
+            leituraButton.disabled = true;
+            leituraButton.innerText = "leitura já iniciada";
+            leituraButton.style.opacity = "0.5";
+            leituraButton.style.cursor = "not-allowed";
+        }
+
+        // EXIT EARLY: Do not attach click listeners to the remaining cards
+        return; 
+    }
+    // =================================================================
 
     // ----------------------------------------------------------------
     // 1. CARD CLICK LOGIC

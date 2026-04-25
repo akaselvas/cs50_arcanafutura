@@ -401,34 +401,28 @@ def cartas():
     The deck is split into 3 visual groups for the UI layout, and the
     number of cards the user should pick is passed to the template.
     """
-    # Get the session ID
-    session_id = request.cookies.get('session')
-    
-    # THE DESTINY LOCK
-    # If a reading already exists in the cache, the user has already "committed".
-    # Do not let them pick cards again; send them straight to the results.
-    if session_id and redis_client.exists(f"reading_cache:{session_id}"):
-        logging.info(f"User attempted to re-access /cartas. Redirecting to existing reading.")
-        return redirect(url_for('results'))
-
-    # Get the raw value from session
     raw_val = session.get('selected_cards')
-    
-    # Validate: Must be one of our allowed strings
     if raw_val not in ['1', '3', '5']:
         return redirect(url_for('home'))
         
-    # Convert to int for the template
     selected_cards = int(raw_val)
+    choosed_cards = session.get('choosed_cards', [])
 
-    # Shallow-copy each card dict before modifying it.
+    # If they already picked cards, we need to attach the image URLs to them
+    # so the template can render them directly.
+    if choosed_cards:
+        for c_card in choosed_cards:
+            # Find the matching card in the global deck to get its image path
+            matching_card = next((card for card in TAROT_CARDS if card['name'] == c_card['name']), None)
+            if matching_card:
+                c_card['image'] = matching_card['image']
+
     deck_copy = [card.copy() for card in TAROT_CARDS]
     shuffled_cards = random.sample(deck_copy, len(deck_copy))
 
     for card in shuffled_cards:
         card["value"] = random.choice(["invertido", "normal"])
 
-    # Divide the 22 cards into 3 rows for display (7 + 8 + 7).
     cards_group1 = shuffled_cards[:7]
     cards_group2 = shuffled_cards[7:15]
     cards_group3 = shuffled_cards[15:]
@@ -437,7 +431,8 @@ def cartas():
                            cards_group1=cards_group1,
                            cards_group2=cards_group2,
                            cards_group3=cards_group3,
-                           selected_cards=selected_cards)
+                           selected_cards=selected_cards,
+                           choosed_cards=choosed_cards)
 
 
 # Apply a stricter rate limit in production (5/min) to protect the AI API quota.
