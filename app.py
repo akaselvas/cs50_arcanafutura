@@ -379,6 +379,8 @@ def process_form():
     session['intencao'] = intencao
     session['selected_cards'] = selected_cards
 
+    session.pop('choosed_cards', None)
+
     # =====================================================================
     # Clear the old reading cache here!
     # Because POST requests are never cached by the browser, this guarantees
