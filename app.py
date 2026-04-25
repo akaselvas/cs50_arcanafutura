@@ -322,7 +322,6 @@ def clear_session():
 
 @app.route('/')
 def home():
-    1/0 
     """
     Renders the landing page where the user enters their intention and
     selects how many cards to draw (1, 3, or 5).
