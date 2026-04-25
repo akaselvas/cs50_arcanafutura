@@ -322,6 +322,7 @@ def clear_session():
 
 @app.route('/')
 def home():
+    1/0 
     """
     Renders the landing page where the user enters their intention and
     selects how many cards to draw (1, 3, or 5).
@@ -503,6 +504,16 @@ def results():
 
         return render_template('results.html', intencao=intencao,
                                selected_cards=selected_cards, choosed_cards=choosed_cards)
+    
+
+@app.errorhandler(404)
+def page_not_found(e):
+    """
+    Catch-all for non-existent routes. 
+    Redirects the user back to the Home page instead of showing a 404 error.
+    """
+    return redirect(url_for('home'))
+
 # =============================================================================
 # SOCKET.IO EVENT HANDLERS
 # These functions are triggered by events emitted from the browser via WebSocket,
