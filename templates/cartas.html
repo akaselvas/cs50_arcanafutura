@@ -88,50 +88,37 @@ document.addEventListener('DOMContentLoaded', function () {
     const selectedCardsCount = {{ selected_cards }}; // Jinja2 injects the integer (1, 3, or 5) directly
     let clickedCards       = 0;   // Running count of how many cards the user has picked
     let selectedCardsData  = [];  // Array of { name, value } objects for the chosen cards
+    
     // =================================================================
-    // NEW: RESTORE STATE IF USER ALREADY PLAYED (Handles Page Refresh)
+    // RESTORE STATE
     // =================================================================
-    const preSelectedCards = {{ choosed_cards | default([]) | tojson }};
+    const previousCards = {{ choosed_cards | default([]) | tojson }};
 
-    if (preSelectedCards.length > 0) {
-        const allRows = document.querySelectorAll('.insideCards > .flex-container:not(#selection-stage)');
-        const stage = document.getElementById('selection-stage');
-        const botoes = document.querySelector('.container-botoes');
-        const leituraButton = document.getElementById('leituraButton');
+    if (previousCards && previousCards.length > 0) {
+        // Mark the correct number of clicks as already done
+        clickedCards = previousCards.length;
+        selectedCardsData = previousCards.map(c => ({ name: c.name, value: c.value }));
 
-        // 1. Hide the 3 rows of face-down cards
-        allRows.forEach(row => row.style.display = 'none');
+        // For each previously chosen card, find its DOM button by name,
+        // flip it to its face, mark it clicked, then run the transition.
+        previousCards.forEach(cardData => {
+            const matchingBtn = Array.from(cards).find(
+                btn => btn.getAttribute('data-name') === cardData.name
+            );
+            if (!matchingBtn) return;
 
-        // 2. Setup the stage layout
-        stage.className = 'flex-container stage-' + preSelectedCards.length;
-
-        // 3. Find the exact cards the user picked, flip them, and move them to the stage
-        preSelectedCards.forEach(savedCard => {
-            const cardBtn = document.querySelector(`.card[data-name="${savedCard.name}"]`);
-            if (cardBtn) {
-                cardBtn.classList.add('clicked');
-                cardBtn.style.backgroundImage = `url("${cardBtn.getAttribute('data-image')}")`;
-                
-                // Apply the saved orientation (normal/invertido)
-                cardBtn.setAttribute('data-value', savedCard.value);
-                const isInverted = savedCard.value === 'invertido';
-                cardBtn.style.transform = isInverted ? "rotateX(180deg)" : "rotateY(180deg)";
-                
-                stage.appendChild(cardBtn);
-            }
+            const imageUrl = matchingBtn.getAttribute('data-image');
+            matchingBtn.style.transition = 'none'; // Instant snap, no animation
+            matchingBtn.style.backgroundImage = `url("${imageUrl}")`;
+            matchingBtn.style.transform = cardData.value === 'invertido'
+                ? 'rotateX(180deg)'
+                : 'rotateY(180deg)';
+            matchingBtn.classList.add('clicked');
         });
 
-        // 4. Reveal the stage and lock the button
-        stage.style.display = 'flex';
-        botoes.style.display = 'flex';
-
-        if (leituraButton) {
-            leituraButton.disabled = true;
-            leituraButton.innerText = "leitura já iniciada";
-            leituraButton.style.opacity = "0.5";
-            leituraButton.style.cursor = "not-allowed";
-        }
-
+        // Jump straight to the stage without animation delay
+        performTransition();
+        
         // EXIT EARLY: Do not attach click listeners to the remaining cards
         return; 
     }
