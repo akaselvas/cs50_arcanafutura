@@ -55,7 +55,7 @@ app = Flask(__name__)
 # ProxyFix tells Flask to trust the forwarded headers from Render's reverse proxy.
 # Without this, Flask would see the proxy's IP instead of the real client's IP,
 # which would break rate limiting and HTTPS detection.
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+# app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2, x_proto=1, x_host=1, x_prefix=1)
 
 # Initialize Socket.IO for real-time, bidirectional communication with the browser.
@@ -333,8 +333,10 @@ def home():
     # if session_id:
     #     redis_client.delete(f"reading_cache:{session_id}")
     #     redis_client.delete(f"chat_history:{session_id}")
-    
-    session.clear()
+
+    session.pop('intencao', None)
+    session.pop('selected_cards', None)
+    session.pop('choosed_cards', None)
 
     client_ip = get_remote_address()
     logging.info(f"QA DEBUG: Home page accessed by IP: {client_ip}")
@@ -511,6 +513,8 @@ def page_not_found(e):
     Catch-all for non-existent routes. 
     Redirects the user back to the Home page instead of showing a 404 error.
     """
+    if request.path.startswith('/static/') or request.path.endswith('.ico'):
+        return e
     return redirect(url_for('home'))
 
 # =============================================================================

@@ -272,6 +272,13 @@
     // ----------------------------------------------------------------
     window.addEventListener('pageshow', function(event) {
         // 1. Clear the gameplay lock flag because we are starting a brand new game
+        
+        if (event.persisted) {
+            window.location.reload();
+            return;
+        }
+        sessionStorage.removeItem('reading_submitted');
+
         sessionStorage.removeItem('reading_committed');
 
         const submitBtn = document.querySelector('#tarotForm button[type="submit"]');
