@@ -416,7 +416,12 @@
             showLoadingIndicator();
             
             // 2. Send the message
-            socket.emit('send_message', { message: message, tarot_reading: tarotReading });
+            socket.emit('send_message', { 
+                message: message, 
+                tarot_reading: tarotReading,
+                csrf_token: csrfToken // <-- ADD THIS LINE
+            });
+            
             userInput.value = '';
 
             // 3. Clear any old timers

@@ -590,6 +590,17 @@ def handle_message(data: Dict[str, str]):
     can give relevant answers to the user's questions. The response is emitted
     back via 'receive_message' for the frontend to display in the chat window.
     """
+    # CSRF Protection for Chat Messages
+    csrf_token = data.get('csrf_token')
+    if not csrf_token:
+        emit('generation_error', {'message': 'CSRF token missing.'})
+        return
+    try:
+        validate_csrf(csrf_token)
+    except ValidationError as e:
+        emit('generation_error', {'message': str(e)})
+        return
+
     raw_message = data.get('message')
 
     if not raw_message:
