@@ -657,9 +657,13 @@ def handle_message(data: Dict[str, str]):
     # 2. Rate limit check
     # Smart fallback: use session cookie, or IP if cookie is missing
     flask_session_id = request.cookies.get('session') or get_remote_address()
+    client_sid = request.sid # Capture the SID
+    
     if is_rate_limited(flask_session_id):
-        # This stays as 'receive_message' because they just need to wait, not reload
-        emit('receive_message', {'message': 'Você está enviando mensagens muito rapidamente. Aguarde um momento.'})
+        # Use socketio.emit with the specific SID to ensure delivery
+        socketio.emit('receive_message', 
+                      {'message': 'Você está enviando mensagens muito rapidamente. Aguarde um momento.'}, 
+                      to=client_sid)
         return
 
     # 3. Input validation
