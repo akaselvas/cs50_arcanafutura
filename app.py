@@ -42,6 +42,9 @@ from wtforms.validators import ValidationError
 from markupsafe import Markup
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+import time
+from collections import defaultdict
+
 # Load environment variables from the .env file (API keys, secret key, Redis URL, etc.)
 load_dotenv()
 
@@ -58,9 +61,16 @@ app = Flask(__name__)
 # app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2, x_proto=1, x_host=1, x_prefix=1)
 
+# Detect whether we're running on Render's production environment.
+# The RENDER env variable is automatically set by the platform.
+is_production = os.environ.get('RENDER') is not None
+
 # Initialize Socket.IO for real-time, bidirectional communication with the browser.
-# cors_allowed_origins="*" allows any domain to connect (fine for a student project).
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent")
+# In production, ONLY allow connections from the official Render URL.
+# In development, allow '*' so local tools (BrowserSync, etc.) work.
+allowed_origins = ["https://arcanafutura.onrender.com"] if is_production else "*"
+socketio = SocketIO(app, cors_allowed_origins=allowed_origins, async_mode="gevent")
+
 
 # --- Secret Key Validation ---
 # The secret key is used by Flask to cryptographically sign sessions and CSRF tokens.
@@ -68,10 +78,6 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode="gevent")
 secret_key = os.getenv('SECRET_KEY')
 if not secret_key:
     raise ValueError("No SECRET_KEY set for Flask application")
-
-# Detect whether we're running on Render's production environment.
-# The RENDER env variable is automatically set by the platform.
-is_production = os.environ.get('RENDER') is not None
 
 # --- Flask & Session Configuration ---
 app.config.update(
@@ -190,6 +196,51 @@ if not is_production:
 Talisman(app, content_security_policy=csp, content_security_policy_nonce_in=['script-src'])
 
 
+# --- WebSocket Chat Rate Limiter ---
+# Flask-Limiter only works on HTTP routes, so it cannot protect Socket.IO event
+# handlers. This in-memory sliding window limiter fills that gap for the chat.
+#
+# A sliding window (vs. a fixed window) means the limit is always calculated
+# against the last 60 seconds from RIGHT NOW, so a user can't game it by
+# sending 10 messages at 1:59 and another 10 at 2:00.
+#
+# Why in-memory instead of Redis?
+# The Redis connection pool is capped at 10 connections and is already shared
+# between Flask-Session and Flask-Limiter. Checking Redis on every chat message
+# risks starving the pool under load. An in-memory dict has zero connection cost.
+#
+# Trade-off: the counter resets on server restart and is not shared across
+# multiple workers. Acceptable for this single-instance deployment on Render.
+_message_timestamps: dict = defaultdict(list)
+_MESSAGE_LIMIT = 10   # max messages allowed per user
+_MESSAGE_WINDOW = 60  # rolling window in seconds
+
+def is_rate_limited(session_id: str) -> bool:
+    """
+    Returns True if the given session (or IP, as fallback) has exceeded
+    _MESSAGE_LIMIT messages within the last _MESSAGE_WINDOW seconds.
+    Also cleans up the dict entry for idle users to prevent memory growth.
+    """
+    now = time.time()
+    window_start = now - _MESSAGE_WINDOW
+
+    # Discard timestamps that have fallen outside the rolling window.
+    _message_timestamps[session_id] = [
+        t for t in _message_timestamps[session_id] if t > window_start
+    ]
+
+    # If the list is now empty, the user has been idle — remove the entry
+    # entirely so the dict doesn't grow unbounded over the server's lifetime.
+    if not _message_timestamps[session_id]:
+        _message_timestamps.pop(session_id, None)
+
+    # Reject the request if the user has hit the limit.
+    if len(_message_timestamps.get(session_id, [])) >= _MESSAGE_LIMIT:
+        return True
+
+    # Otherwise, record this message's timestamp and allow it through.
+    _message_timestamps.setdefault(session_id, []).append(now)
+    return False
 
 # --- Input Sanitization ---
 def sanitize_input(text: str) -> str:
@@ -590,46 +641,52 @@ def handle_message(data: Dict[str, str]):
     can give relevant answers to the user's questions. The response is emitted
     back via 'receive_message' for the frontend to display in the chat window.
     """
-    # CSRF Protection for Chat Messages
+    # 1. CSRF check
     csrf_token = data.get('csrf_token')
     if not csrf_token:
-        emit('generation_error', {'message': 'CSRF token missing.'})
+        # Change to 'generation_error' to trigger the frontend reload UI
+        emit('generation_error', {'message': 'Sessão expirada ou token ausente.'})
         return
     try:
         validate_csrf(csrf_token)
-    except ValidationError as e:
-        emit('generation_error', {'message': str(e)})
+    except ValidationError:
+        # Change to 'generation_error' to trigger the frontend reload UI
+        emit('generation_error', {'message': 'Token de segurança inválido.'})
         return
 
-    raw_message = data.get('message')
+    # 2. Rate limit check
+    # Smart fallback: use session cookie, or IP if cookie is missing
+    flask_session_id = request.cookies.get('session') or get_remote_address()
+    if is_rate_limited(flask_session_id):
+        # This stays as 'receive_message' because they just need to wait, not reload
+        emit('receive_message', {'message': 'Você está enviando mensagens muito rapidamente. Aguarde um momento.'})
+        return
 
+    # 3. Input validation
+    raw_message = data.get('message')
     if not raw_message:
         logging.warning("Chat message rejected: Missing or empty 'message' key.")
-        return 
-    
-    
-    message = sanitize_input(data['message'])
+        return
+
+    message = sanitize_input(raw_message)
 
     if len(message) > 500:
         logging.warning(f"Chat message rejected: Exceeded 500 characters. Length: {len(message)}")
         emit('receive_message', {'message': 'Sua mensagem é muito longa. Por favor, resuma sua pergunta em até 500 caracteres.'})
         return
-    
+
+    # 4. Context & History Setup
     tarot_reading = data.get('tarot_reading', '')
-    
-    # 1. Capture IDs
     flask_sid = request.cookies.get('session')
     client_sid = request.sid
     history_key = f"chat_history:{flask_sid}"
 
+    # 5. Background AI Task
     def background_chat():
         try:
-            # 2. Retrieve existing history from Redis
             raw_history = redis_client.get(history_key)
-            # We store history as a simple text string for the prompt
             history_text = raw_history.decode('utf-8') if raw_history else ""
 
-            # 3. Build the prompt with History
             chat_prompt = (
                 f"Contexto da Leitura:\n{tarot_reading}\n\n"
                 f"Histórico da Conversa:\n{history_text}\n"
@@ -640,17 +697,14 @@ def handle_message(data: Dict[str, str]):
             response = model.generate_content(chat_prompt)
             ai_response = response.text
 
-            # 4. Update history in Redis (Append the new exchange)
             new_history = history_text + f"Usuário: {message}\nTarólogo: {ai_response}\n"
             redis_client.setex(history_key, 1800, new_history)
 
             socketio.emit('receive_message', {'message': ai_response}, to=client_sid)
-            
+
         except Exception as e:
             logging.error(f"Error in message generation: {str(e)}")
-            socketio.emit('receive_message', {
-                'message': "Ocorreu um erro ao processar sua mensagem."
-            }, to=client_sid)
+            socketio.emit('receive_message', {'message': "Ocorreu um erro ao processar sua mensagem."}, to=client_sid)
 
     socketio.start_background_task(background_chat)
 
