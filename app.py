@@ -59,7 +59,7 @@ app = Flask(__name__)
 # Without this, Flask would see the proxy's IP instead of the real client's IP,
 # which would break rate limiting and HTTPS detection.
 # app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=2, x_proto=1, x_host=1, x_prefix=1)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 # Detect whether we're running on Render's production environment.
 # The RENDER env variable is automatically set by the platform.
