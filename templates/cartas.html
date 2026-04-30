@@ -34,17 +34,32 @@
         <!-- BRANCH 2: NORMAL STATE (22 Face-down cards) -->
         <div class="flex-container">
             {% for card in cards_group1 %}
-            <button class="card" data-image="{{ card.image }}" data-name="{{ card.name }}" data-value="{{ card.value }}"></button>
+            <button class="card" 
+                aria-label="Carta de Tarot {{ loop.index }} de 22"
+                data-image="{{ card.image }}" 
+                data-name="{{ card.name }}" 
+                data-value="{{ card.value }}">
+            </button>
             {% endfor %}
         </div>
         <div class="flex-container">
             {% for card in cards_group2 %}
-            <button class="card" data-image="{{ card.image }}" data-name="{{ card.name }}" data-value="{{ card.value }}"></button>
+            <button class="card" 
+                aria-label="Carta de Tarot {{ loop.index + 7 }} de 22"
+                data-image="{{ card.image }}" 
+                data-name="{{ card.name }}" 
+                data-value="{{ card.value }}">
+            </button>
             {% endfor %}
         </div>
         <div class="flex-container">
             {% for card in cards_group3 %}
-            <button class="card" data-image="{{ card.image }}" data-name="{{ card.name }}" data-value="{{ card.value }}"></button>
+            <button class="card" 
+                aria-label="Carta de Tarot {{ loop.index + 15 }} de 22"
+                data-image="{{ card.image }}" 
+                data-name="{{ card.name }}" 
+                data-value="{{ card.value }}">
+            </button>
             {% endfor %}
         </div>
 
