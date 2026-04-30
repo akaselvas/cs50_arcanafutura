@@ -37,7 +37,7 @@
         <div class="txt-resultado">
 
             <!-- Loading state: visible by default until the reading arrives. -->
-            <p id="loading-message">
+            <p id="loading-message" role="status" aria-live="polite">
                 Estamos gerando sua leitura. Por favor, aguarde<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>
                 <!-- CSS animates these three dots to pulse in sequence. -->
                 
@@ -45,7 +45,7 @@
 
             <!-- Result state: hidden until the AI response is received. -->
             <div id="result-area" style="display:none;">
-                <p id="tarot-reading"></p>
+                <p id="tarot-reading" aria-live="polite"></p>
                 <!-- Button to open the chat panel for follow-up questions. -->
                 <div id="chat-button-container" class="container-botoes">
                     <button id="open-chat" type="button" class="botao-texto-grande">
