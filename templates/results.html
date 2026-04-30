@@ -381,6 +381,10 @@
         document.querySelector('.decorCentroAnimate').style.animationPlayState = 'paused';
         chatInterface.style.display = 'flex';
         chatOverlay.style.display   = 'block';
+        
+        //Move focus to the input field immediately
+        userInput.focus();
+        
         if (isFirstChatOpen) {
             addMessage('bot', 'Olá, vamos conversar mais sobre sua leitura, o que você quer saber?');
             isFirstChatOpen = false;
@@ -391,6 +395,13 @@
         document.querySelector('.decorCentroAnimate').style.animationPlayState = 'running';
         chatInterface.style.display = 'none';
         chatOverlay.style.display   = 'none';
+    });
+
+    // Close chat with Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && chatInterface.style.display !== 'none') {
+            closeChatButton.click(); // Reuses your existing close logic
+        }
     });
 
     // ----------------------------------------------------------------
