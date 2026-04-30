@@ -187,7 +187,9 @@
                     // Dim the other buttons, but keep them clickable.
                     botoes.forEach(b => {
                         if (b !== botao) {
-                            b.style.opacity = '0.5';
+                            b.style.opacity = '1'; 
+                            b.style.backgroundColor = 'rgba(32, 20, 51, 0.3)'; // Faded gold
+                            b.style.color = '#988031'; // Keep the text bright
                         }
                     });
                     
