@@ -391,10 +391,31 @@
         }
     });
 
+    // --- ACCESSIBILITY: FOCUS TRAP FOR CHAT MODAL ---
+    const firstFocusableElement = closeChatButton; // The "X" button
+    const lastFocusableElement  = sendMessageButton; // The "Enviar" button
+
+    chatInterface.addEventListener('keydown', function(e) {
+        if (e.key !== 'Tab') return;
+
+        if (e.shiftKey) { // If Shift + Tab (going backwards)
+            if (document.activeElement === firstFocusableElement) {
+                lastFocusableElement.focus();
+                e.preventDefault();
+            }
+        } else { // If Tab (going forwards)
+            if (document.activeElement === lastFocusableElement) {
+                firstFocusableElement.focus();
+                e.preventDefault();
+            }
+        }
+    });
+
     closeChatButton.addEventListener('click', () => {
         document.querySelector('.decorCentroAnimate').style.animationPlayState = 'running';
         chatInterface.style.display = 'none';
         chatOverlay.style.display   = 'none';
+        openChatButton.focus(); 
     });
 
     // Close chat with Escape key
