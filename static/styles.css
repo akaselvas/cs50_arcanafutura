@@ -1354,7 +1354,7 @@ textarea:focus {
         top: 2dvh;
         transform: translate(-50%, 0);
         height: auto;
-        max-height: 38dvh;
+        max-height: 42dvh;
         border-radius: 8px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
     }
@@ -1366,20 +1366,32 @@ textarea:focus {
     /* Reclaim vertical space. */
     .chat-interface.chat-focus-mode .chat-messages {
         flex-grow: 0;
-        height: 100px;
+        height: 70px; 
         padding: 8px;
         background-color: rgba(0, 0, 0, 0.3);
     }
 
     .chat-interface.chat-focus-mode .chat-input-area {
         padding: 6px 10px;
-        min-height: 45px;
+        min-height: 80px;
     }
 
     .chat-interface.chat-focus-mode .chat-input,
     .chat-interface.chat-focus-mode .chat-send-button {
-        height: 32px;
+        height: 35px;
         font-size: 13px;
+    }
+    /* Stack the chat input and button vertically */
+    .chat-input-area {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .chat-input {
+        width: 100%;
+    }
+    .chat-send-button {
+        margin-left: 0;
+        width: 100%;
     }
 }
 
@@ -1672,7 +1684,7 @@ textarea:focus {
         top: 5dvh;
         transform: translate(-50%, 0);
         height: auto;
-        max-height: 40dvh;
+        max-height: 45dvh;
         border-radius: 10px;
         box-shadow: 0 4px 30px rgba(0, 0, 0, 0.9);
     }
@@ -1683,20 +1695,32 @@ textarea:focus {
 
     .chat-interface.chat-focus-mode .chat-messages {
         flex-grow: 0;
-        height: 120px;
+        height: 80px;
         padding: 10px;
         background-color: rgba(0, 0, 0, 0.3);
     }
 
     .chat-interface.chat-focus-mode .chat-input-area {
         padding: 8px 12px;
-        min-height: 50px;
+        min-height: 90px;
     }
 
     .chat-interface.chat-focus-mode .chat-input,
     .chat-interface.chat-focus-mode .chat-send-button {
         height: 35px;
         font-size: 14px;
+    }
+
+    .chat-input-area {
+        flex-direction: column;
+        gap: 10px;
+    }
+    .chat-input {
+        width: 100%;
+    }
+    .chat-send-button {
+        margin-left: 0;
+        width: 100%;
     }
 }
 
