@@ -108,6 +108,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // RESTORE STATE
     // =================================================================
     const previousCards = {{ choosed_cards | default([]) | tojson }};
+    if (previousCards.length === 0) {
+        sessionStorage.removeItem('reading_committed');
+    }
 
     if (previousCards && previousCards.length > 0) {
         // Mark the correct number of clicks as already done
