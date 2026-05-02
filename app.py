@@ -146,6 +146,9 @@ app.config['SESSION_REDIS'] = redis_client
 csrf = CSRFProtect(app)
 Session(app)
 
+# Completely disable rate limiting during local development
+app.config["RATELIMIT_ENABLED"] = is_production
+
 # 2. Configure Limiter to manage its own connections (Max 10 connections)
 limiter = Limiter(
     get_remote_address,
@@ -156,6 +159,7 @@ limiter = Limiter(
     strategy="fixed-window",
     default_limits=["400 per day", "100 per hour"]
 )
+
 
 # --- Content Security Policy (CSP) ---
 # CSP is a browser security feature that restricts which sources of content
@@ -173,23 +177,23 @@ csp = {
 # In local development, extend the CSP to allow connections from BrowserSync,
 # Responsively App, and other local dev tools that run on different ports.
 if not is_production:
-    csp['script-src'] += [
-        "http://localhost:3000",
-        "http://192.168.0.102:3000",
-        "https://localhost:*",
-        "http://localhost:*"
-    ]
-    csp['img-src'] += [
-        "http://localhost:3000",
-        "http://192.168.0.102:3000"
-    ]
-    csp['connect-src'] += [
-        "http://localhost:5000",     "ws://localhost:5000",
-        "http://localhost:3000",     "ws://localhost:3000",
-        "http://192.168.0.102:5000", "ws://192.168.0.102:5000",
-        "http://192.168.0.102:3000", "ws://192.168.0.102:3000",
-        "https://localhost:*",       "wss://localhost:*"
-    ]
+    csp['script-src'].extend([
+        "http://localhost:*",
+        "http://127.0.0.1:*",
+        "http://192.168.0.101:*",
+        "'unsafe-eval'"
+    ])
+    csp['connect-src'].extend([
+        "ws://localhost:*", "wss://localhost:*", "http://localhost:*",
+        "ws://127.0.0.1:*", "wss://127.0.0.1:*", "http://127.0.0.1:*",
+        "ws://192.168.0.101:*", "wss://192.168.0.101:*", "http://192.168.0.101:*"
+    ])
+    csp['img-src'].extend([
+        "http://localhost:*",
+        "http://127.0.0.1:*",
+        "http://192.168.0.101:*",
+        "data:"
+    ])
 
 # Apply the CSP via Flask-Talisman, which also adds other security headers
 # like HSTS (HTTP Strict Transport Security) and X-Content-Type-Options.
