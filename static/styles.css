@@ -1353,21 +1353,21 @@ textarea:focus {
     .chat-interface.chat-focus-mode {
         top: 2dvh;
         transform: translate(-50%, 0);
-        height: auto;
-        max-height: 42dvh;
+        height: auto !important;
+        max-height: 48dvh !important; /* Increased to ensure it fits */
         border-radius: 8px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
     }
 
     .chat-interface.chat-focus-mode .chat-header {
-        display: none;
+        display: none !important;
     }
 
     /* Reclaim vertical space. */
     .chat-interface.chat-focus-mode .chat-messages {
-        flex-grow: 0;
-        height: 70px; 
-        padding: 8px;
+        flex-grow: 0 !important;
+        height: 60px !important; /* Shrunk to make room for the buttons */
+        padding: 8px !important;
         background-color: rgba(0, 0, 0, 0.3);
     }
 
@@ -1383,15 +1383,25 @@ textarea:focus {
     }
     /* Stack the chat input and button vertically */
     .chat-input-area {
-        flex-direction: column;
-        gap: 8px;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important; /* Forces children to take 100% width */
+        gap: 8px !important;
+        height: auto !important;
+        min-height: unset !important;
+        padding: 10px !important;
     }
+    
     .chat-input {
-        width: 100%;
+        width: 100% !important;
+        margin: 0 !important;
+        height: 40px !important;
     }
+    
     .chat-send-button {
-        margin-left: 0;
-        width: 100%;
+        width: 100% !important;
+        margin: 0 !important;
+        height: 40px !important;
     }
 }
 
@@ -1683,20 +1693,20 @@ textarea:focus {
     .chat-interface.chat-focus-mode {
         top: 5dvh;
         transform: translate(-50%, 0);
-        height: auto;
-        max-height: 45dvh;
+        height: auto !important;
+        max-height: 50dvh !important; /* Increased to ensure it fits */
         border-radius: 10px;
         box-shadow: 0 4px 30px rgba(0, 0, 0, 0.9);
     }
 
     .chat-interface.chat-focus-mode .chat-header {
-        display: none;
+        display: none !important;
     }
 
     .chat-interface.chat-focus-mode .chat-messages {
-        flex-grow: 0;
-        height: 80px;
-        padding: 10px;
+        flex-grow: 0 !important;
+        height: 70px !important; /* Shrunk to make room for the buttons */
+        padding: 10px !important;
         background-color: rgba(0, 0, 0, 0.3);
     }
 
@@ -1712,15 +1722,25 @@ textarea:focus {
     }
 
     .chat-input-area {
-        flex-direction: column;
-        gap: 10px;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+        height: auto !important;
+        min-height: unset !important;
+        padding: 12px !important;
     }
+    
     .chat-input {
-        width: 100%;
+        width: 100% !important;
+        margin: 0 !important;
+        height: 42px !important;
     }
+    
     .chat-send-button {
-        margin-left: 0;
-        width: 100%;
+        width: 100% !important;
+        margin: 0 !important;
+        height: 42px !important;
     }
 }
 
