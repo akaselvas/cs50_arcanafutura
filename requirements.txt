@@ -53,7 +53,7 @@ grpcio-status==1.66.2
 gunicorn==23.0.0
 h11==0.14.0
 httplib2==0.22.0
-idna==3.10
+idna==3.15
 importlib_resources==6.4.5
 itsdangerous==2.2.0
 Jinja2==3.1.4
