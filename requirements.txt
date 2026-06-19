@@ -20,7 +20,7 @@ click==8.1.7
 click-didyoumean==0.3.1
 click-plugins==1.1.1
 click-repl==0.3.0
-cryptography==44.0.0
+cryptography==48.0.1
 Deprecated==1.2.14
 dnspython==2.7.0
 eventlet==0.37.0
