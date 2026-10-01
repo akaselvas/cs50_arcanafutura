@@ -319,7 +319,7 @@ generation_config = {
 
 # Initialize the Gemma 3 model (a lightweight, open-weights model from Google).
 model = genai.GenerativeModel(
-    model_name="gemma-3-12b-it",
+    model_name="gemini-3.1-flash-lite",
     generation_config=generation_config
 )
 
