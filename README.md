@@ -2,7 +2,8 @@
 
 Foi meu projeto final do curso **CS50 de Harvard** e, depois, passou por uma **auditoria completa de QA e segurança**: mais de 300 casos de teste manuais, cerca de 40 defeitos encontrados, 5 deles críticos, todos corrigidos e protegidos por uma suíte automatizada de Pytest que roda no CI a cada commit.
 
-**🔗 [App no ar](https://arcanafutura.onrender.com)** · **📊 [Matriz completa de testes](https://docs.google.com/spreadsheets/d/1o8hVff3aoBEdNZ48j4oaW1-oXteNvpU7OzxkRuL8xvc/edit?usp=sharing)**
+** [App no ar](https://arcanafutura.onrender.com)** · 
+** [Matriz completa de testes](https://docs.google.com/spreadsheets/d/1o8hVff3aoBEdNZ48j4oaW1-oXteNvpU7OzxkRuL8xvc/edit?usp=sharing)**
 
 ---
 
