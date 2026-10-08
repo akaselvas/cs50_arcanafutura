@@ -1,135 +1,193 @@
-```markdown
-# AI-Powered Tarot Reading Application
+**ArcanaFutura** é uma aplicação web de leitura de Tarot com inteligência artificial. A pessoa escreve uma intenção (opcional), escolhe quantas cartas quer tirar (1, 3 ou 5), vira as cartas de um baralho embaralhado dos Arcanos Maiores e recebe uma leitura gerada pelo Google Gemini, entregue ao navegador em tempo real via WebSockets. Depois, ainda dá para conversar com o "tarólogo" sobre a leitura.
 
-This Flask application provides a web interface for Tarot card readings using AI-generated interpretations, specifically leveraging Google's Gemini Pro model.  It offers a user-friendly experience with interactive card selection and real-time chat functionality for deeper exploration of the reading.
+Foi meu projeto final do curso **CS50 de Harvard** e, depois, passou por uma **auditoria completa de QA e segurança**: mais de 300 casos de teste manuais, cerca de 40 defeitos encontrados, 5 deles críticos, todos corrigidos e protegidos por uma suíte automatizada de Pytest que roda no CI a cada commit.
 
-## Features
+**🔗 [App no ar](https://arcanafutura.onrender.com)** · **📊 [Matriz completa de testes](https://docs.google.com/spreadsheets/d/1o8hVff3aoBEdNZ48j4oaW1-oXteNvpU7OzxkRuL8xvc/edit?usp=sharing)**
 
-* **AI-Generated Readings:**  Provides insightful Tarot readings based on user intention and selected cards, powered by Google's Gemini Pro.
-* **Interactive Card Selection:** Users can visually select their cards from a randomized spread.
-* **Real-Time Chat:** Integrates a chat interface powered by SocketIO, allowing users to ask follow-up questions and delve deeper into their reading.  The AI chatbot utilizes the context of the generated reading to provide relevant responses.
-* **Secure and Robust:**  Implements various security measures, including CSRF protection, rate limiting, and robust Content Security Policy (CSP) with nonces.  Utilizes server-side sessions stored in Redis for enhanced security and scalability.
-* **Easy Deployment:** Designed for easy deployment with clear environment variable configuration.
+---
 
+## Como funciona
 
-## Technical Details
-
-* **Framework:** Flask
-* **AI Model:** Google Gemini Pro (gemini-1.5-pro-002)
-* **Real-Time Communication:** SocketIO
-* **Session Management:** Flask-Session with Redis backend
-* **Rate Limiting:** Flask-Limiter with Redis backend
-* **Security:** Flask-Talisman, Flask-WTF (CSRF Protection)
-* **Markdown Rendering:** Markdown, Markupsafe
-* **Frontend:** HTML, CSS, JavaScript
-
-
-## Libraries and Their Purpose
-
-This application utilizes several key libraries:
-
-* **Flask:** The core web framework for building the application.
-* **google.generativeai:**  Provides access to Google's Gemini Pro AI model for generating Tarot readings and chat responses.
-* **SocketIO:** Enables real-time, bidirectional communication between the client and server for the chat functionality.
-* **Flask-Session & Redis:**  Manages server-side sessions, storing them in Redis for improved security and scalability.
-* **Flask-Limiter & Redis:** Implements rate limiting to prevent abuse, using Redis as the storage backend.
-* **Flask-WTF:** Provides CSRF protection to prevent cross-site request forgery attacks.
-* **Flask-Talisman:** Sets important security headers, including Content Security Policy (CSP), to mitigate various attack vectors.
-* **Markdown & Markupsafe:**  Used for rendering Markdown-formatted text into HTML safely.
-* **json:**  Handles JSON encoding and decoding for data exchange.
-* **secrets & os:** Used for generating cryptographically secure random numbers and interacting with the operating system for environment variables.
-* **logging:**  Provides logging capabilities for debugging and monitoring.
-
-
-## Security Measures
-
-Security is a primary concern in this application.  Several measures are implemented to protect against common web vulnerabilities:
-
-* **CSRF Protection (Flask-WTF):**  Protects against cross-site request forgery attacks by using CSRF tokens.
-* **Rate Limiting (Flask-Limiter):**  Limits the number of requests a user can make within a given timeframe to prevent abuse and denial-of-service attacks.  Uses Redis for distributed rate limiting.
-* **Content Security Policy (CSP) (Flask-Talisman):**  Implements a strong CSP with nonces to mitigate XSS (cross-site scripting) attacks. This restricts the sources from which the browser is allowed to load resources, reducing the impact of injected malicious scripts.
-* **Server-Side Sessions (Flask-Session & Redis):**  Stores session data securely on the server-side using Redis, preventing client-side tampering.
-* **Secure Session Management:**  Uses a cryptographically secure secret key (`SECRET_KEY`) for signing session cookies, ensuring integrity and confidentiality.
-* **Input Sanitization:**  Placeholder functions are provided for input sanitization.  **It is crucial to implement robust sanitization using a library like Bleach to prevent XSS vulnerabilities.** This will help prevent malicious code injection from user inputs.
-
-
-## Installation and Setup
-
-1. **Clone the repository:**
-
-   ```bash
-   git clone https://github.com/your-username/tarot-reading-app.git
-   cd tarot-reading-app
-   ```
-
-2. **Create and activate a virtual environment:**
-
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate  # On Linux/macOS
-   venv\Scripts\activate  # On Windows
-   ```
-
-3. **Install dependencies:**
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Configure environment variables:**
-
-   Create a `.env` file in the root directory and add the following variables:
-
-   ```
-   GENAI_API_KEY=<YOUR_GOOGLE_AI_API_KEY>
-   SECRET_KEY=<YOUR_SECRET_KEY>  # Generate a strong secret key
-   REDIS_URL=redis://localhost:6379  # Update if using a different Redis instance
-   ```
-
-5. **Run the application:**
-
-   ```bash
-   flask run
-   ```
-   Alternatively, for development with SocketIO:
-   ```bash
-   python app.py
-   ```
-
-## Usage
-
-1. **Access the application:** Open your web browser and navigate to `http://127.0.0.1:5000/`.
-2. **Enter your intention:**  Provide a brief description of your focus for the reading.
-3. **Select the number of cards:** Choose 1, 3, or 5 cards.
-4. **Select Your Cards:** Click on the cards from the displayed sets to choose your reading.
-5. **View your reading:** The AI-generated reading will be displayed on the results page.
-6. **Use the chat:** Ask follow-up questions or clarifications related to your reading in the chat interface.
-
-## Security Considerations
-
-* **GENAI_API_KEY:**  Store your API key securely in the `.env` file and never expose it in your code repository.
-* **SECRET_KEY:** Use a strong, randomly generated secret key for session signing.
-* **Rate Limiting:**  Adjust the rate limits in `app.py` as needed to prevent abuse.
-* **Input Sanitization:**  While a placeholder is provided, implement robust input sanitization to prevent potential security vulnerabilities (e.g., XSS attacks).  Consider using a library like Bleach.
-* **CSP Nonces:**  The application uses CSP nonces for enhanced security against XSS attacks.  Ensure this mechanism is correctly implemented and maintained.
-
-## Future Enhancements
-
-* **Improved Input Sanitization:** Implement comprehensive input sanitization for user-provided text.
-* **User Authentication:**  Add user authentication to personalize readings and track history.
-* **Expanded Card Database:** Include more Tarot decks and spreads.
-* **Enhanced Chat Functionality:**  Improve the AI chatbot's understanding and response capabilities.
-* **UI/UX Improvements:** Refine the user interface for a more engaging experience.
-
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit pull requests for bug fixes, feature enhancements, or documentation improvements.
-
-## License
-
-This project is licensed under the MIT License.
+```
+/ (home)  ──►  /process_form (POST, JSON)  ──►  /cartas  ──►  /results (POST)  ──►  WebSocket
+ intenção        valida + sanitiza               escolhe N cartas   renderiza a página   start_generation ──► Gemini ──► generation_complete
+ + nº cartas     guarda na sessão (Redis)        (animação de flip)                      send_message     ──► Gemini ──► receive_message
 ```
 
+1. **Home (`/`)**: a pessoa digita a intenção (máx. 400 caracteres, pode ficar vazia) e escolhe 1, 3 ou 5 cartas. O formulário é enviado com `fetch()` para `/process_form`, que valida, sanitiza tudo e devolve um redirect em JSON.
+2. **Seleção de cartas (`/cartas`)**: o baralho de 22 cartas é embaralhado no servidor e cada carta recebe uma orientação aleatória (`normal` ou `invertido`). O navegador vira as cartas uma a uma (transformações 3D em CSS), move as escolhidas para um "palco" e envia para `/results`.
+3. **Resultado (`/results`)**: a página renderiza na hora. A leitura em si é gerada **de forma assíncrona**, depois do carregamento, por um evento Socket.IO, então a requisição HTTP nunca fica presa esperando o LLM.
+4. **Leitura e chat**: o servidor chama o Gemini em uma tarefa de segundo plano, guarda a leitura em cache no Redis (quem reconecta recebe na hora) e envia o resultado para o socket correto. O chat de acompanhamento reaproveita a leitura como contexto.
+5. **Proteção de privacidade**: uma checagem com `sessionStorage` chama `/clear_session` quando a página é aberta em uma aba nova, para que a sessão de uma pessoa não seja herdada por outra em computadores compartilhados.
 
-This enhanced README provides more detailed explanations of the application's features, technical details, setup instructions, security considerations, and future enhancements.  It also includes important information about contributing and licensing. Remember to replace placeholders like `your-username` and `<YOUR_GOOGLE_AI_API_KEY>` with your actual information.
+## Stack
+
+| Camada | Ferramentas |
+|---|---|
+| **Backend** | Python, Flask, Jinja2, Flask-SocketIO (gevent), Gunicorn |
+| **Estado** | Redis (sessões no servidor, cache da leitura, histórico do chat, contadores de rate limit) |
+| **IA** | Google Gemini API (`google-generativeai`, modelo `gemini-3.1-flash-lite`), pipeline Markdown → HTML |
+| **Segurança** | Flask-WTF (CSRF), Flask-Talisman (CSP e headers de segurança), Flask-Limiter, Bleach, ProxyFix |
+| **Frontend** | JavaScript puro (DOM, Web Animations API, `sessionStorage`), HTML/CSS, marcação pensada para acessibilidade (WCAG) |
+| **QA / CI** | Pytest, Bandit (SAST), GitHub Actions, pre-commit, DevTools, cURL, RedisInsight, Lighthouse, BrowserStack |
+| **Hospedagem** | Render (atrás de proxy reverso Render/Cloudflare) |
+
+## Medidas de segurança
+
+- **Proteção CSRF** em todas as rotas HTTP que alteram estado, e `validate_csrf()` manual nos eventos WebSocket (que não passam pelo middleware do Flask).
+- **Sanitização de entrada**: todo texto do usuário tem o HTML removido com Bleach (política de texto puro) e tem limite de tamanho (400 caracteres na intenção, 500 nas mensagens do chat).
+- **Escape em contexto JS**: valores renderizados dentro de blocos `<script>` usam `| tojson`, já que sanitizadores de HTML não protegem contra quebra de string em JavaScript.
+- **Content Security Policy** com nonce por requisição via Talisman. Origens de desenvolvimento (BrowserSync, localhost) só entram quando `is_production` é falso.
+- **Rate limiting**:
+  - HTTP: Flask-Limiter com Redis, mais restrito em `/results` em produção (5/min) para proteger a cota do Gemini.
+  - WebSocket: limitador próprio de janela deslizante (10 mensagens por 60 s por sessão), porque o Flask-Limiter não enxerga eventos de socket.
+- **Sessão reforçada**: sessões no Redis, ID assinado, `HttpOnly`, `SameSite=Lax`, `Secure` em produção, vida útil de 30 minutos e cookie não permanente.
+- **CORS**: origens do Socket.IO restritas ao domínio de produção.
+- **Proxy reverso**: `ProxyFix(x_for=1, …)` corresponde à arquitetura de um salto da Render, então o IP real do cliente é usado e headers `X-Forwarded-For` forjados não são confiados.
+- **Erros tratados**: rotas inexistentes redirecionam para a home; payloads malformados ou adulterados caem em valores seguros em vez de gerar erro 500.
+
+## Destaques da auditoria de QA
+
+A auditoria foi organizada em hierarquia Scrum no Jira: **9 Épicos → 54 User Stories → mais de 300 subtarefas**, executadas principalmente com testes exploratórios manuais. Para decidir o que automatizar, usei uma única pergunta:
+
+> *"Se isso quebrar, o app vai travar, ser hackeado ou me custar dinheiro?"*
+
+Validações visuais e de animação ficaram manuais. Portões de segurança, proteções da cota da API e lógica de rotas viraram testes Pytest.
+
+Cinco achados críticos foram documentados em profundidade e corrigidos:
+
+| # | Achado | Camada | Correção |
+|---|---|---|---|
+| 1 | **Mutação do baralho global**: o embaralhamento escrevia orientações direto em `TAROT_CARDS`, corrompendo o estado sob requisições gevent concorrentes | Runtime do Flask | `deck_copy = [card.copy() for card in TAROT_CARDS]` |
+| 2 | **Bypass do rate limiter** com `X-Forwarded-For` forjado (`ProxyFix` mal configurado) | Fronteira do proxy | `ProxyFix(x_for=1, …)` |
+| 3 | **Cross-Site WebSocket Hijacking**: sem CSRF no `send_message` e CORS com curinga, permitindo drenar a cota do Gemini de graça | WebSocket (entrada) | `validate_csrf()`, lista de origens permitidas e limitador próprio |
+| 4 | **Quebra de contexto JS**: `{{ intencao }}` dentro de `<script>`; o Bleach não protege nesse contexto | Renderizador Jinja2 | `{{ intencao \| tojson }}` |
+| 5 | **Dead SID**: emitir para `session.sid` (chave do Redis) em vez de `request.sid` (sala do socket) causava loading infinito e consumo silencioso de cota | WebSocket (saída) | Usar `request.sid` + cache da leitura no Redis para reconexões |
+
+👉 O detalhamento completo (impacto, correção e teste de regressão de cada achado) está no meu portfólio.
+
+## Suíte de testes automatizados
+
+Os testes são organizados por Épico de QA. O docstring de cada teste explica o **risco** que ele protege (crash, ataque ou custo), então a suíte também funciona como documentação.
+
+| Arquivo | Escopo |
+|---|---|
+| `test_epic_1.py` | Fluxo do formulário, validação no backend, sanitização XSS, CSRF, limites de tamanho, métodos HTTP |
+| `test_epic_2.py` | Embaralhamento e imutabilidade do baralho, contador de seleção, resiliência do payload de `/results` |
+| `test_epic_3.py` | Pipeline de geração com IA, integridade do prompt, tratamento de falhas |
+| `test_epic_4.py` | Segurança do handler de chat, fallback em falhas de WebSocket |
+| `test_epic_5.py` | Rate limiting, flags de cookie, CSRF no WebSocket, isolamento de sessão |
+| `test_epic_6.py` | Rota `/clear_session` (apenas POST, isenta de CSRF, limpa tudo) |
+| `test_epic_7.py` | Guardas de navegação e de sessão, tratamento de 404 |
+| `test_epic_8.py` | Headers de segurança, CORS, configuração de CSP |
+
+Os Épicos 6 (comportamento visual e de toque) e 9 (cross-browser, acessibilidade e performance) são em grande parte **manuais por decisão**: exigem um navegador real, e o lugar certo para isso é Playwright ou Cypress, não um runner de testes unitários.
+
+**Padrão interessante: `xfail` como correção guiada por testes.** Vulnerabilidades conhecidas foram escritas primeiro como testes `@pytest.mark.xfail(strict=True)`: ficam vermelhos enquanto o bug existe, documentando o problema com um caso reproduzível, e viram verdes quando a correção entra.
+
+## Pipeline de CI
+
+O workflow `.github/workflows/ci.yml` roda a cada push e pull request na `main`:
+
+1. Sobe um serviço **Redis** no runner (`ubuntu-latest`).
+2. Instala o **Python 3.11** e as dependências.
+3. Roda o **Bandit** (`bandit -lll -r . -x ./tests`) para análise estática de segurança, com o mesmo nível de severidade usado localmente.
+4. Executa o **Pytest** com as variáveis de ambiente de teste.
+
+## Estrutura do projeto
+
+```
+.
+├── .github/workflows/ci.yml     # Pipeline de CI (Pytest + Bandit)
+├── .pre-commit-config.yaml
+├── app.py                       # App Flask, rotas, handlers Socket.IO, configuração de segurança
+├── start.sh                     # Entrypoint de produção (Gunicorn + worker gevent-websocket)
+├── Procfile
+├── requirements.txt
+├── LICENSE
+├── static/
+│   ├── styles.css
+│   ├── img/                     # Arte das cartas (a01–a22), versos e decorações
+│   └── js/
+│       ├── index.js
+│       ├── cartas.js
+│       └── results.js
+├── templates/
+│   ├── layout.html              # Template base (navbar, decorações, fontes)
+│   ├── index.html               # Formulário de intenção + número de cartas
+│   ├── cartas.html              # Tabuleiro de seleção de cartas
+│   └── results.html             # Leitura + interface de chat
+└── tests/
+    ├── conftest.py              # Fixtures: client, csrf_client, socket_client
+    └── test_epic_1.py … test_epic_8.py
+```
+
+## Rodando localmente
+
+**Pré-requisitos:** Python 3.11, Redis rodando em `localhost:6379` (ou uma `REDIS_URL`) e uma chave de API do [Google AI Studio](https://aistudio.google.com/).
+
+```bash
+# 1. Clonar
+git clone https://github.com/akaselvas/cs50_arcanafutura.git
+cd cs50_arcanafutura
+
+# 2. Criar ambiente virtual
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+
+# 3. Instalar dependências
+pip install -r requirements.txt
+
+# 4. Criar o arquivo .env (veja a seção abaixo)
+
+# 5. Subir o Redis (exemplo com Docker)
+docker run -d -p 6379:6379 redis
+
+# 6. Rodar o app
+python app.py
+```
+
+Depois, acesse <http://localhost:5000>.
+
+Em desenvolvimento (`RENDER` não definida), o rate limiting fica desligado, a CSP aceita ferramentas locais de dev e o Socket.IO aceita qualquer origem.
+
+Para rodar os testes (com Redis no ar e as variáveis de ambiente definidas):
+
+```bash
+pytest -v
+```
+
+## Variáveis de ambiente
+
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `SECRET_KEY` | ✅ | Assina sessões e tokens CSRF. O app não inicia sem ela. |
+| `GENAI_API_KEY` | ✅ | Chave da API do Google Gemini. O app não inicia sem ela. |
+| `REDIS_URL` | ❌ | Padrão: `redis://localhost:6379`. |
+| `RENDER` | ❌ | Definida automaticamente pela Render; ativa o modo produção (cookies `Secure`, CORS restrito, rate limiting ligado). |
+
+Exemplo de `.env`:
+
+```env
+SECRET_KEY=troque-por-uma-string-longa-e-aleatoria
+GENAI_API_KEY=sua-chave-do-gemini
+REDIS_URL=redis://localhost:6379
+```
+
+## Deploy
+
+O app roda na **Render**, com uma instância Redis gerenciada. Comando de início em produção (`start.sh`):
+
+```bash
+gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 --timeout 120 app:app -b 0.0.0.0:$PORT
+```
+
+Um único worker é proposital: o limitador do chat é em memória (para não esgotar o pool de conexões do Redis, que é limitado), então ele não é compartilhado entre workers.
+
+## Licença
+
+Veja o arquivo [LICENSE](LICENSE).
+
+---
+
+> **Nota de transparência:** o código dos testes automatizados foi escrito em colaboração com ferramentas de IA. Eu defini a estratégia de testes, encontrei os casos de borda por testes exploratórios manuais e revisei todo o código gerado contra o código-fonte da aplicação.
